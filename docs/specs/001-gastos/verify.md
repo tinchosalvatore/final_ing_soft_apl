@@ -4,6 +4,7 @@
 - Rama / PR: [PR #5](https://github.com/tinchosalvatore/final_ing_soft_apl/pull/5), rama `spec/001-gastos`, verificado sobre `7954f2a`
 - Fecha: 2026-11-20
 - Resultado: **Cumple con observaciones**
+- Re-verificación de `fix/001-patch` ([PR #15](https://github.com/tinchosalvatore/final_ing_soft_apl/pull/15), `4e72d56` → `dd8178d`): **Cumple**. O1, O3 y O6 quedan cerradas (ver §5)
 
 <!-- No alcanza con que compile. Se contrasta contra la spec: ¿cada criterio tiene un test que lo representa de verdad? -->
 
@@ -154,3 +155,38 @@ Una aclaración: los `i` y `n` del ADR son **instrucciones para quien regenere**
 | A12 | ídem, como ADMIN | CA12 y CA13: `" supermercado "`, `"SUPERMERCADO"`, renombrar a `" ocio"`; borrar Supermercado en uso | 400 `error.nombreduplicado` (3 casos) y 400 `error.categoriaenuso`. `"Super mercado"` → 201 (otro nombre, correcto) |
 | A13 | ídem | CA10: sin token y con un token inválido, en `/api/gastos` y `/count` | 401 |
 | A14 | `prod` real, base vacía | CA14 | Las 6 categorías existen (ids de `sequence_generator`) |
+
+## 5. Re-verificación de `fix/001-patch` (PR #15)
+
+**Cómo se verificó.**
+- Lo verifiqué sobre `main` (`ed9a9d4`), que ya incluye `dd8178d`.
+- Sin E2E y sin usar el puerto 8080 (regla 13).
+- Revisé el código y los commits.
+- Corrí `npm run ci:backend:test` en local: 78 unitarios y 241 de integración, BUILD SUCCESS.
+- Probé un jar `-Pprod` en el puerto 18080, contra un Postgres aislado que borré al terminar.
+
+**Separación de roles:** los tests (`0b11efe`) salen de la sesión del agente testing, y el código (`90ce9cd`, `640739c`, `7a556c2`, `5bb7fd2`, `da928a4`, `d9d4841`) de la del coder. Según `tasks.md`, en la fase roja fallaban el PATCH con 141 caracteres y CA17. Los de PATCH de CA02 a CA04 pasaban: son de regresión, porque el código ya los cumplía (lo había probado a mano en el §4).
+
+| Hallazgo | Qué se hizo | Cómo se verificó | Resultado |
+|---|---|---|---|
+| **O1:** PATCH con 141 caracteres → 500 | `GastoService.validar` recibe la descripción (la del DTO o la actual) y lanza `CampoInvalidoException("descripcion")` si pasa de 140 | `GastoPatchIT`: `…141 caracteres por PATCH (O1): 400…, no 500` y `…140 caracteres por PATCH se acepta`, más POST y PUT. Con el jar de prod: PATCH con 141 → **400** con `fieldErrors[].field = descripcion` y sin clases internas; con 140 → 200 | ✅ cerrada |
+| **O3:** faltaban tests de PATCH | `GastoPatchIT` suma CA02 (los 4 montos), CA03 y CA04 por PATCH | Comprobé que verifican el campo del error **y** que el gasto no cambia, y en CA04 que el dueño sigue siendo `ana` | ✅ cerrada |
+| **O6 → 001-CA17:** borrar un usuario con gastos | `UserService.deleteUser` rechaza con `ReglaDeNegocioException("usuariocongastos")` si existe algún gasto del login | `UsuarioConGastosIT` (rechazo y borde sin gastos). Con el jar de prod: `DELETE /api/admin/users/ana` con un gasto → **400 `error.usuariocongastos`**, y `ana` y su gasto siguen. Un usuario sin gastos → 204 | ✅ cerrada (ver nota) |
+| **R2 del 000:** rotación del hash | `runOnChange="true"` en el changeset de S5 | Ver la tabla de abajo | ✅ cerrada |
+| **O2 del 000 / O2 de la 001:** `.gitignore` | `*.log*` → `*.log` + `*.log.*` | `git check-ignore`: `x.logica.ts` ya no se ignora, y `x.log` y `app.log.1` sí. `git status --ignored src docs`: ningún archivo fuente ignorado | ✅ |
+| **.yo-resolve** | Lista con `skip` los archivos del ADR-0007 y los del ADR-0008 que son del desarrollador o tests generados ajustados | Es coherente con los dos ADR. No incluye los compartidos (`routes.tsx`, `header.tsx`, `ExceptionTranslator`, `UserService`, yml), que se fusionan a mano con needles, como dice el comentario del archivo | ✅ |
+| **O6 del 000:** `SPRING_MAIL_HOST` | `spring.mail.host: ${SPRING_MAIL_HOST:localhost}` en prod | Está en `.env.example` (comentada, opcional) y en `12-factors.md` §2 | ✅ |
+
+**R2 con el jar de prod** (cada corrida reinicia la app sobre la misma base):
+
+| Corrida | `TRACKER_ADMIN_PASSWORD_HASH` | Resultado |
+|---|---|---|
+| F1 | H1, base vacía | Arranca. `admin/admin` → 401 y `admin/<H1>` → 200. Changeset `EXECUTED` |
+| F2 | H1 (sin cambios) | Arranca, mismo `md5sum` y no vuelve a correr |
+| F3 + F4 | H1. En F3, admin cambia su contraseña por la API (`change-password`) y se reactiva `user` en la base | En F4 el changeset no corre: la contraseña de la UI sigue valiendo (200) y `user` sigue activo |
+| F5 | **H2** | Arranca. El changeset queda `RERAN` con un `md5sum` nuevo, `admin/<H2>` → 200, la contraseña de la UI → 401 y `user` vuelve a quedar desactivado |
+| F6 | sin la variable | **No arranca**: `TRACKER_ADMIN_PASSWORD_HASH falta o no es un hash BCrypt`. Con `runOnChange`, el placeholder sin resolver cambia el checksum y la precondición `HALT` corta el arranque, también en una base ya migrada |
+
+Las cuatro pruebas acordadas pasan. Cambiar la variable **pisa** la contraseña que admin haya puesto desde la UI (F5): es el costo que se aceptó en el PR #2 y ya está en `seguridad.md` §4.1, R2.
+
+**Nota sobre CA17 (baja, solo con el registro habilitado):** `UserService.removeNonActivatedUser` (el registro generado) sigue borrando con `userRepository.delete` sin pasar por el control de CA17. En prod no se llega, porque el registro está deshabilitado (regla 16 y CA16). En dev y en el perfil de muestras sí: registrarse con el login de un usuario **desactivado que tiene gastos** intentaría borrarlo, y la FK de `gasto` lo cortaría con un 500. No afecta a prod. **Propuesta:** dejarlo como limitación conocida, o hacer que el registro trate a un usuario con gastos como "login en uso".
