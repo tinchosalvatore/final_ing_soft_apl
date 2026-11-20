@@ -12,11 +12,13 @@
 | T3 | Integración de las validaciones | 001-CA02, CA03 | hecha (en rojo) | ver commit `test(001)` |
 | T4 | Integración de las reglas de categorías | 001-CA11 a CA14 | hecha (en rojo) | ver commit `test(001)` |
 | T5 | E2E del flujo escrito a mano con los textos de §5.1 | 001-CA15 | hecha (en rojo) | ver commit `test(001)` |
-| T6 | **Regrabar el E2E con `npx playwright codegen`** cuando exista "Mis gastos", antes del verify | 001-CA15 | **pendiente** (agente testing) | |
+| T6 | **Regrabar el E2E con codegen** cuando exista "Mis gastos", antes del verify. Graba el humano: el agente testing levanta la app, le pasa el comando y el guion, y pule el código grabado (locators, aserciones, IDs) | 001-CA15 | **pendiente** | |
+| T7 | Integración del registro deshabilitado (criterio nuevo, R1 del verify 000) | 001-CA16 | hecha (en rojo) | ver commit `test(001): 001-CA16` |
 
 ### Contrato para el coder
 No hace falta ninguna clase nueva: los tests usan la API que ya existe (`/api/gastos`, `/api/gastos/count`, `/api/categorias`) con los códigos y claves de la spec §5.1. Lo que los tests esperan además:
 
+- **001-CA16, registro deshabilitado por configuración:** el test pone `application.registro.habilitado=false` con `@TestPropertySource`. El coder la agrega a `ApplicationProperties` (prefijo `application`): `true` por defecto (dev y test) y `false` en `application-prod.yml`. Con `false`, `POST /api/register` responde **401** sin tocar la tabla de usuarios. Si prefiere otro nombre de propiedad o un perfil, avisa al agente testing y se cambia solo la anotación del test.
 - **Categorías iniciales en todos los contextos de Liquibase**, también en `test` (001-CA14 consulta la base de los tests sin crear datos).
 - `fieldErrors[].field` = `monto` / `fecha` también cuando la regla se valida en el service (CA02, CA03), al crear y al editar.
 - `user.login` en la respuesta de crear o editar y `/count` restringido al dueño: ya están en la spec §5.1.
@@ -53,6 +55,8 @@ No hace falta ninguna clase nueva: los tests usan la API que ya existe (`/api/ga
 | | `001-CA13 borrar categoría en uso: 400 error.categoriaenuso y la categoría sigue existiendo` | CA13 |
 | | `001-CA13 borde: borrar una categoría sin gastos se permite` | §4 |
 | | `001-CA14 categorías iniciales: existen las 6 del punto 13` | CA14 |
+| `src/test/java/com/trackergastos/web/rest/RegistroDeshabilitadoIT.java` | `001-CA16 registro deshabilitado: el login de una cuenta desactivada → 401 y la cuenta queda intacta` | CA16 |
+| | `001-CA16 registro deshabilitado: un login nuevo → 401 y no se crea ningún usuario` | CA16, regla 16 |
 | `src/test/javascript/playwright/e2e/negocio/001-gastos.pw.ts` | `001-CA15 flujo E2E: carga, ve, edita y borra un gasto en "Mis gastos"` | CA15 |
 
 Apoyo: `src/test/java/com/trackergastos/DatosPruebaGastos.java` y `src/test/javascript/playwright/e2e/negocio/helpers/usuarios.ts` (los mismos archivos que en la rama de la 002).
@@ -87,6 +91,15 @@ Cada falla se revisó y es por la razón esperada, por ejemplo:
 - `001-CA02 bordes válidos` (3 casos).
 
 Los que prueban los criterios del 001-CA01 al CA14 fallan todos.
+
+001-CA16 (`-Dit.test=RegistroDeshabilitadoIT`):
+
+```
+[ERROR] Tests run: 2, Failures: 0, Errors: 2, Skipped: 0 -- in com.trackergastos.web.rest.RegistroDeshabilitadoIT
+Caused by: UnboundConfigurationPropertiesException: The elements [application.registro.habilitado] were left unbound.
+```
+
+Falla al levantar el contexto porque `ApplicationProperties` (`ignoreUnknownFields = false`) todavía no tiene la propiedad del contrato. Cuando el coder la agregue, sin el bloqueo el test falla por la razón de negocio: `/api/register` responde 201 y, en el primer caso, borra y recrea la cuenta desactivada (`UserService.removeNonActivatedUser`).
 
 E2E, corrido con `npx playwright test --retries=0 e2e/negocio/001-gastos.pw.ts` contra la app levantada con `./mvnw` (perfil dev):
 
