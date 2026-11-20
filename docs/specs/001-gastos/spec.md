@@ -89,6 +89,8 @@ No describe *cómo* se implementa: fija lo que un test puede observar desde afue
 | Gasto ajeno o inexistente en GET, PUT, PATCH o DELETE (001-CA07, CA08) | **404** en todos los casos, también para un id inexistente. El cuerpo es igual en los dos casos, salvo los campos que contienen el id o la ruta (`instance`, `path`) |
 | Sin sesión (001-CA10) | **401** |
 | USER que escribe categorías (001-CA11) | **403** |
+| Conteo de gastos (`/api/gastos/count`, que genera JHipster) | Cuenta **solo los gastos del usuario autenticado**, con los mismos filtros. Si no, revela cuántos gastos tienen los demás (A01) |
+| Respuesta de crear o editar un gasto | Incluye el `user.login` del dueño (sin otros datos del usuario) |
 | Orden del listado (punto 4) | El backend **impone siempre** fecha descendente y después id descendente. Si el cliente manda otro `sort`, se ignora |
 
 ### Interfaz (textos que usan los E2E)
