@@ -2,7 +2,7 @@
 
 - Verificador: **agente ci** (evidencia de los criterios). La verificación formal (S1 a S10, 12 factors) la hace el agente seguridad.
 - Rama / PR: `spec/005-integracion-continua`, [PR #4](https://github.com/tinchosalvatore/final_ing_soft_apl/pull/4) (mergeado)
-- Resultado: **Cumple con observaciones** (CA08: falta el intento de merge manual, ver §1)
+- Resultado: **Cumple**
 
 <!-- No alcanza con que compile. Se contrasta contra la spec: ¿cada criterio tiene un test que lo representa de verdad? -->
 
@@ -19,7 +19,7 @@ Repo: `https://github.com/tinchosalvatore/final_ing_soft_apl`. Los PRs #7 a #11 
 | 005-CA05 | [PR #10](https://github.com/tinchosalvatore/final_ing_soft_apl/pull/10), [run 44782682201](https://github.com/tinchosalvatore/final_ing_soft_apl/actions/runs/44782682201): `log4j-core` 2.14.1 en `pom.xml`. Trivy: `CVE-2021-44228 CRITICAL fixed 2.14.1 → 2.15.0…`, `Total: 3 (HIGH: 1, CRITICAL: 2)`. Rojo en **SCA (Trivy)** | sí | ✅ |
 | 005-CA06 | [PR #11](https://github.com/tinchosalvatore/final_ing_soft_apl/pull/11), [run 44782696807](https://github.com/tinchosalvatore/final_ing_soft_apl/actions/runs/44782696807): en `i18n/es/gasto.json` se renombra la clave `home.title`, así que la UI muestra la clave cruda en vez de "Gastos". Rojo en **E2E - Playwright**: `gasto.pw.ts › should have translated page title` falla 3 veces (intento + `retry #1` + `retry #2`). Artefacto `reporte-e2e` (7,4 MB) descargable desde el run, con `report/index.html` y, en cada intento, `results/…/trace.zip` + `test-failed-1.png` | sí. Los E2E generados por JHipster usan `data-cy` y no textos; este es el único que verifica un texto visible. Los E2E por rol/texto que grabe el agente testing lo van a cubrir mejor | ✅ |
 | 005-CA07 | Con la protección activa: commit vacío sobre `origin/main` y `git push origin HEAD:main`. GitHub responde: `GH006: Protected branch update failed for refs/heads/main. - Changes must be made through a pull request. - Required status check "verificar" is expected.` y `! [remote rejected] HEAD -> main (protected branch hook declined)`. Con `enforce_admins: true` vale también para el dueño del repo | sí | ✅ |
-| 005-CA08 | Con la protección activa, `gh pr view N --json mergeStateStatus` da **`BLOCKED`** para los 5 PRs en rojo (#7 a #11). **Falta el intento de merge**: el agente no tiene permiso para correr `gh pr merge` sobre un PR en rojo. Lo hace el humano sobre el #11 (si se llegara a mergear, es un cambio inofensivo): `gh pr merge 11 --merge` tiene que fallar, o en la UI el botón tiene que figurar deshabilitado con "Merging is blocked". Pegar acá la salida o la captura | parcial (falta el intento) | ⏳ |
+| 005-CA08 | Con la protección activa, `gh pr view N --json mergeStateStatus` da **`BLOCKED`** para los 5 PRs en rojo (#7 a #11). Intento de merge sobre el #11, corrido por el documentador con autorización explícita del humano (la sesión del agente ci no tiene permiso para intentar merges): `gh pr merge 11 --merge` → `X Pull request tinchosalvatore/final_ing_soft_apl#11 is not mergeable: the base branch policy prohibits the merge.`, `exit=1`; después del intento, `OPEN BLOCKED`. **No se probó `--admin` a propósito**: con `enforce_admins: true` tendría que estar bloqueado igual, pero si no lo estuviera, el PR se mergearía | sí | ✅ |
 
 ## 2. Casos borde no contemplados
 
