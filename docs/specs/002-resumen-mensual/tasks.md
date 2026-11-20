@@ -87,6 +87,32 @@ E2E, corrido con `npx playwright test --retries=0 e2e/negocio/002-resumen-mensua
 
 Falla porque todavía no existe el menú "Mis gastos". Es la falla esperada. Antes de fallar, el test ya había creado y activado al usuario nuevo por API, y el `afterEach` lo borró sin errores.
 
+## Fase verde (agente coder, 2026-11-20)
+
+Plan: `plan.md` (aprobado por el documentador). Esta rama integra `spec/001-gastos`, de la que depende.
+
+| # | Tarea | Criterios | Estado | Commit |
+|---|---|---|---|---|
+| C1 | `MesResumen.resolver`: `AAAA-MM`, rango `[2000-01, mes actual]`; `null` → mes actual | 002-CA10, CA11 | hecha | `feat(002): resumen mensual…` |
+| C2 | `MesInvalidoException` extiende `ReglaDeNegocioException` → 400 `error.mesinvalido` | 002-CA10, §5.1 | hecha | ídem |
+| C3 | `ResumenMensualCalculadora`: `BigDecimal` exacto, `divide(…, 1, HALF_UP)`, variación nula si el mes anterior es 0, orden total desc + nombre | 002-CA01 a CA07, CA09 | hecha | ídem |
+| C4 | `ResumenMensualService`: gastos del usuario vía `GastoQueryService` (S2), del primer día del mes anterior al último del pedido | 002-CA08 | hecha | ídem |
+| C5 | `ResumenResource`: `GET /api/resumen` | §5.1 | hecha | ídem |
+| C6 | Pantalla "Resumen" (`app/modules/resumen/`), menú "Resumen" y tests Vitest de formato y selector de mes | 002-CA12, punto 7 | hecha | `feat(002): pantalla Resumen y menú…` |
+| C7 | Integrar `spec/001-gastos` (después del fix de javadoc del #5) y `main` | — | hecha | merges |
+| C8 | Push y PR #6 a "ready for review" | — | hecha | |
+
+**No se modificó ningún test del agente testing.** El E2E 002-CA12 tenía un locator ambiguo: `getByText('$ 1.500,00')` también matcheaba la diferencia `+$ 1.500,00`, que la spec exige mostrar cuando el mes anterior está en 0. Lo reporté al documentador y testing lo corrigió con `exact: true` (`10921fc`).
+
+### Evidencia (2026-11-20)
+- Tests del agente testing: `ResumenMensualCalculadoraTest` 13/13, `MesResumenTest` 8/8, `ResumenMensualServiceIT` 3/3, `ResumenResourceIT` 7/7.
+- E2E contra la app en dev: la suite completa pasa 59/59, incluidos 001-CA15 y 002-CA12.
+- `npm run ci:backend:test`: javadoc, checkstyle, 79 unit y 216 IT, todos en verde. `npm run ci:frontend:test`: build prod y 187 Vitest, en verde.
+
+### Notas del coder
+- El archivo de lógica del front se llama `resumen.reglas.ts`, no `.logica`, por el patrón `*.log*` del `.gitignore` (ver la 001).
+- Variación de exactamente 0 → "Sin cambios" `0,0 %`. Diferencia con signo (`+$ 200,00`). Las dos decisiones son del documentador y están en la spec §5.1.
+
 ## Notas para la próxima sesión
 - Los tests de integración crean los usuarios `ana` y `beto` y buscan las categorías por nombre o las crean, así funcionan antes y después de que se carguen las categorías iniciales de la 001.
 - El E2E del CA12 crea un usuario nuevo por API, así puede afirmar valores exactos. Necesita que `/api/register` y la activación por `PUT /api/admin/users/{login}` sigan andando.
