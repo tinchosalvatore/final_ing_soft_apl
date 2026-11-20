@@ -105,7 +105,7 @@ public class UserResource {
     @PostMapping("/users")
     @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     public ResponseEntity<User> createUser(@Valid @RequestBody AdminUserDTO userDTO) throws URISyntaxException {
-        LOG.debug("REST request to save User : {}", userDTO);
+        LOG.debug("REST request to save User : {}", userDTO.getLogin());
 
         if (userDTO.getId() != null) {
             throw new BadRequestAlertException("A new user cannot already have an ID", "userManagement", "idexists");
@@ -137,7 +137,7 @@ public class UserResource {
         @PathVariable(name = "login", required = false) @Pattern(regexp = Constants.LOGIN_REGEX) String login,
         @Valid @RequestBody AdminUserDTO userDTO
     ) {
-        LOG.debug("REST request to update User : {}", userDTO);
+        LOG.debug("REST request to update User : {}", userDTO.getLogin());
         Optional<User> existingUser = userRepository.findOneByEmailIgnoreCase(userDTO.getEmail());
         if (existingUser.isPresent() && !existingUser.orElseThrow().getId().equals(userDTO.getId())) {
             throw new EmailAlreadyUsedException();
