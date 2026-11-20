@@ -61,6 +61,8 @@ Son propuestas para las specs y el plan. **No corregí nada**: lo que haya que c
 
   Cualquiera de las tres necesita la aprobación del humano y una prueba de reinicio con otro hash en `tasks.md`.
 
+- **Derivación (2026-11-20):** riesgo R2 en `seguridad.md` §4.1. Lo decide el humano. El documentador recomienda `runOnChange="true"`, que convierte a la variable en la fuente de verdad y lo implementa el coder en un PR chico. Si se adopta, hay que verificar que reiniciar con otro hash arranque y aplique el hash nuevo, y tener en cuenta que el hash de la variable pisa cualquier contraseña de `admin` cambiada desde la UI.
+
 ### O2 (baja): un registro anónimo borra al `user` desactivado y toma su login
 
 - **Qué pasa:** `UserService.registerUser` (código generado por JHipster) busca el login y, si la cuenta existe pero **no está activada**, la **borra** (`removeNonActivatedUser`) y crea una nueva. En prod real, `user` queda desactivado por S5, así que cualquiera puede hacer un `POST /api/register` con `login: "user"`:
@@ -73,26 +75,38 @@ Son propuestas para las specs y el plan. **No corregí nada**: lo que haya que c
 - **Cómo se generaliza:** pasa con **cualquier** cuenta que un admin desactive, no solo con `user`. Un anónimo puede borrarla y quedarse con su login. Si esa cuenta tiene gastos, el resultado depende de la FK de `gasto`, y eso no lo cubre ninguna spec.
 - **Propuesta:** que el documentador decida si va como caso borde de la spec 001 (cuentas y dueño de los gastos) o como un punto nuevo de `seguridad.md` (por ejemplo, desactivar no es lo mismo que "registro pendiente"). Para el 000 alcanza con dejarlo asentado.
 
+- **Derivación (2026-11-20):** riesgo R1 en `seguridad.md` §4.1. Lo decide el humano. El documentador propone desactivar el auto-registro en prod (los usuarios los crea el ADMIN). Si se decide, entra en la spec 001.
+
 ### O3 (ya conocido, 004-CA11): el login de un usuario desactivado responde 500, **con cualquier contraseña**
 
 Ya está asignado a 004-CA11. Hay un detalle que la spec no recoge: el 500 sale **también con una contraseña incorrecta** (`user/wrongpass` → 500). Para comparar: un usuario inexistente → 401, y `admin` con una contraseña mala → 401. JHipster comprueba si la cuenta está activada antes de comparar la contraseña, así que el 500 revela que la cuenta existe sin saber la clave. **Propuesta:** que 004-CA11 diga "con cualquier contraseña" en lugar de "con contraseña correcta".
+
+- **Derivación (2026-11-20):** aceptado. 004-CA11 ahora dice "con cualquier contraseña".
 
 ### O4 (baja): el apagado ordenado no tiene prueba de comportamiento
 
 La configuración es correcta (V11), pero ni `tasks.md` ni esta verificación prueban que una petición en curso termine durante el apagado. Además, el mensaje de Spring *"Commencing graceful shutdown"* no aparece en el log de la corrida C, así que tampoco hay evidencia indirecta. **Propuesta:** si la cátedra pide evidencia del factor IX, que la sume el agente que tenga un endpoint lento a mano (por ejemplo, observabilidad o testing). No bloquea el paso 000.
 
+- **Derivación (2026-11-20):** queda como observación; no se va a automatizar.
+
 ### O5 (baja, documentación): `secret-samples` también se activa con `dev`
 
 `application.yml` tiene el grupo `dev: [secret-samples, api-docs]`. Es razonable para desarrollo local, pero `12-factors.md` §2 y `seguridad.md` S6 dicen "solo CI/E2E y el compose de demo". **Propuesta:** que el documentador sume "y el perfil `dev`" en las dos guías.
+
+- **Derivación (2026-11-20):** corregido por el documentador en `12-factors.md` §2 y en `seguridad.md` S6.
 
 ### O6 (baja): detalles del factor III
 
 - `spring.mail.host: localhost` y `port: 25` están fijos en `application-prod.yml`. Hoy no se manda mail en prod, pero si se configura tiene que pasar a variable de entorno.
 - Sin `SPRING_DATASOURCE_URL`, prod falla (bien), pero con un mensaje poco claro: `'url' must start with "jdbc"`, porque el placeholder llega literal a Hikari. **Propuesta opcional:** mencionarlo en `.env.example`.
 
+- **Derivación (2026-11-20):** `SPRING_MAIL_HOST` por variable de entorno va en el PR chico de O1 (coder). El mensaje poco claro de `SPRING_DATASOURCE_URL` se acepta.
+
 ### O7 (para la spec 004): el email del usuario sale en los logs
 
 Al registrarse, `MailService` (generado) loguea `WARN ... Email could not be sent to user 'otro@example.com'`. La regla 6 de `AGENTS.md` no nombra los emails, pero son datos personales. **Propuesta:** que el documentador decida si la spec 004 los suma a la lista de datos que no van a los logs.
+
+- **Derivación (2026-11-20):** el email se sumó a "dato sensible" en la spec 004 (punto 3, con referencia a `MailService`). Lo arregla el agente observabilidad.
 
 ## 3. Revisión del diff (`86053eb..d29d803`)
 
