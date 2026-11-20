@@ -12,7 +12,7 @@
 | T3 | Unitarios del cálculo y del mes | 002-CA01 a CA07, CA09, CA10, CA11 | hecha (en rojo) | `e0eecec` |
 | T4 | Integración del service y del endpoint (Testcontainers) | 002-CA01, CA07, CA08, CA10, CA11 | hecha (en rojo) | `e0eecec` |
 | T5 | E2E del flujo escrito a mano con los textos de §5.1 | 002-CA12 | hecha (en rojo) | `e0eecec` |
-| T6 | **Regrabar el E2E con `npx playwright codegen`** cuando exista la pantalla "Resumen", antes del verify | 002-CA12 | **pendiente** (agente testing) | |
+| T6 | **Regrabar el E2E con codegen** cuando exista la pantalla "Resumen", antes del verify. Graba el humano: el agente testing levanta la app, le pasa el comando y el guion, y pule el código grabado (locators, aserciones, IDs) | 002-CA12 | **pendiente** | |
 
 ### Contrato para el coder
 
