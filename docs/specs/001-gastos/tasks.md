@@ -149,6 +149,10 @@ Plan: `plan.md` (aprobado). Decisión estructural: **ADR-0008**.
 - E2E contra la app levantada con `./mvnw` (perfil dev): `e2e/negocio/001-gastos.pw.ts` (001-CA15) pasa, y la suite completa también (58 tests; los 8 de `entity/` primero fallaron como USER y pasan como ADMIN).
 
 ### Notas del coder
+- **Rojo del primer CI del PR #5 y su fix:**
+  - `backend:doc:test` (javadoc sin compilar) no resolvía los imports puntuales del metamodelo en `GastoSpecifications`; ahora se importan con wildcard. Además, un `@param` desactualizado.
+  - El `.gitignore` generado (`*.log*`) excluía `gastos.logica.ts` y su test, que se renombraron a `gastos.reglas.ts`.
+  - Antes de pushear se corre `npm run ci:backend:test` y `npm run ci:frontend:test`, no solo `verify` y `npm test`.
 - "Hoy" se calcula siempre con `America/Argentina/Buenos_Aires` (`GastoService.ZONA_HOY`), sin `Clock` inyectable. Los tests de testing usan la misma zona.
 - Los textos del módulo están en `textos.ts` y no en un JSON de i18n (ADR-0008). Solo las claves de error de negocio van en `i18n/es/reglas.json`.
 - El CRUD generado de gastos sigue accesible escribiendo `/gasto` en la URL, pero el backend aplica las mismas reglas.
