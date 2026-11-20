@@ -26,7 +26,8 @@ Responsable: el implementador de cada spec (es transversal), y el verificador lo
 |---|---|---|
 | `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` | Conexión a Postgres | `.env` / `app.yml` |
 | `JHIPSTER_SECURITY_AUTHENTICATION_JWT_BASE64_SECRET` | Firma de los JWT. **Distinto por entorno**; en prod real nunca se usa el valor de muestra de `application-secret-samples.yml` | `.env` |
-| `TRACKER_ADMIN_PASSWORD_HASH` | Hash BCrypt de la contraseña de `admin` en prod (S5). Es un hash, no la contraseña en claro | `.env` |
+| `TRACKER_ADMIN_PASSWORD_HASH` | Hash BCrypt de la contraseña de `admin` en prod (S5). Es un hash, no la contraseña en claro. Cambiarla rota la contraseña en el próximo arranque (R2 de `seguridad.md`) | `.env` |
+| `SPRING_MAIL_HOST` | Servidor de mail (hoy fijo en el yml de prod, lo pasa a variable el coder) | `.env` |
 | `JHIPSTER_LOGGING_LOGSTASH_ENABLED`, `JHIPSTER_LOGGING_LOGSTASH_HOST`, `JHIPSTER_LOGGING_LOGSTASH_PORT` | Envío de logs | `.env` / `app.yml` |
 | `SERVER_PORT` | Puerto HTTP | opcional |
 | `SPRING_PROFILES_ACTIVE` | `prod` / `dev` | `app.yml` |
@@ -34,9 +35,9 @@ Responsable: el implementador de cada spec (es transversal), y el verificador lo
 El agente que agregue una variable la suma a esta tabla y a `.env.example` en el mismo commit.
 
 ### Perfiles: "prod real" vs `secret-samples`
-JHipster 9.4 separa los secretos de ejemplo en el perfil **`secret-samples`** (`application-secret-samples.yml`: secreto JWT de muestra, `admin/admin` y `user/user` activos). Lo activan `src/main/docker/app.yml` (`prod,api-docs,secret-samples`) y el script de E2E del CI (`e2e,secret-samples,prod`).
+JHipster 9.4 separa los secretos de ejemplo en el perfil **`secret-samples`** (`application-secret-samples.yml`: secreto JWT de muestra, `admin/admin` y `user/user` activos). Lo activan el grupo de perfiles `dev` (`application.yml`), `src/main/docker/app.yml` (`prod,api-docs,secret-samples`) y el script de E2E del CI (`e2e,secret-samples,prod`).
 - **Prod real** = `SPRING_PROFILES_ACTIVE=prod` **sin** `secret-samples`, con todos los secretos por variables de entorno. Si falta alguno, la app no arranca (falla rápido).
-- **`secret-samples`** = solo para el CI/E2E y el compose local de demo. Nunca para un despliegue real.
+- **`secret-samples`** = solo para dev, el CI/E2E y el compose local de demo. Nunca para un despliegue real.
 
 En un `.env` de docker compose, los `$` del hash BCrypt se escriben `$$` (o el valor va entre comillas simples) para que compose no los interprete como variables.
 
