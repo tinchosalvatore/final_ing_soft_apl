@@ -17,6 +17,7 @@ import Footer from 'app/shared/layout/footer/footer';
 import Header from 'app/shared/layout/header/header';
 import { getProfile } from 'app/shared/reducers/application-profile';
 import { getSession } from 'app/shared/reducers/authentication';
+import SincronizacionOffline from 'app/shared/offline/sincronizacion-offline';
 
 const baseHref = document.querySelector('base')!.getAttribute('href')!.replace(/\/$/, '');
 
@@ -40,6 +41,8 @@ export const App = () => {
     <BrowserRouter basename={baseHref}>
       <div className="app-container" style={{ paddingTop }}>
         <ToastContainer position="top-left" className="toastify-container" toastClassName="toastify-toast" />
+        {/* Spec 003, punto 9 (ADR-0008): sincroniza los gastos pendientes al abrir y al volver la conexión */}
+        <SincronizacionOffline />
         <ErrorBoundary>
           <Header
             isAuthenticated={isAuthenticated}

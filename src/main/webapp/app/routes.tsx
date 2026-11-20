@@ -8,9 +8,9 @@ import PasswordResetInit from 'app/modules/account/password-reset/init/password-
 import Register from 'app/modules/account/register/register';
 import Home from 'app/modules/home/home';
 import Login from 'app/modules/login/login';
-import Logout from 'app/modules/login/logout';
 import PrivateRoute from 'app/shared/auth/private-route';
 import ErrorBoundaryRoutes from 'app/shared/error/error-boundary-routes';
+import CerrarSesion from 'app/shared/offline/cerrar-sesion';
 import { Authority } from 'app/shared/jhipster/constants';
 
 const loading = <div>loading ...</div>;
@@ -29,7 +29,8 @@ const AppRoutes = () => {
         <ErrorBoundaryRoutes>
           <Route index element={<Home />} />
           <Route path="login" element={<Login />} />
-          <Route path="logout" element={<Logout />} />
+          {/* Spec 003, punto 14 (ADR-0008): avisa si hay pendientes y limpia los datos locales antes del logout generado */}
+          <Route path="logout" element={<CerrarSesion />} />
           <Route path="account">
             <Route
               path="*"

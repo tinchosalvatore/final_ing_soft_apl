@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Button, Card, Col, Row, Table } from 'react-bootstrap';
 
 import { formatearMonto, hoyArgentina } from 'app/modules/gastos/gastos.reglas';
+import { cargarConCache } from 'app/shared/offline/conexion';
+import { TEXTOS_OFFLINE } from 'app/shared/offline/textos';
 
 import { ResumenMensual, obtenerResumen } from './resumen.api';
 import { formatearDiferencia, formatearPorcentaje, formatearVariacion, mesActual, moverMes, sentidoVariacion } from './resumen.reglas';
@@ -16,12 +18,18 @@ export const Resumen = () => {
   const [mes, setMes] = useState(actual);
   const [resumen, setResumen] = useState<ResumenMensual | null>(null);
   const [error, setError] = useState(false);
+  // Spec 003, puntos 4 y 5: datos guardados con aviso, o "no disponible" si este mes nunca se vio con conexión.
+  const [guardados, setGuardados] = useState(false);
+  const [noDisponible, setNoDisponible] = useState(false);
 
   useEffect(() => {
     setError(false);
-    obtenerResumen(mes)
-      .then(setResumen)
-      .catch(() => setError(true));
+    void cargarConCache(() => obtenerResumen(mes)).then(resultado => {
+      setNoDisponible(resultado.estado === 'no-disponible');
+      setError(resultado.estado === 'error');
+      setGuardados(resultado.estado === 'ok' && resultado.guardados);
+      setResumen(resultado.estado === 'ok' ? resultado.datos : null);
+    });
   }, [mes]);
 
   const variacionInformada = resumen?.variacionPorcentual !== null && resumen?.variacionPorcentual !== undefined;
@@ -41,6 +49,8 @@ export const Resumen = () => {
       </div>
 
       {error && <Alert variant="danger">{T.error}</Alert>}
+      {guardados && <Alert variant="warning">{TEXTOS_OFFLINE.datosGuardados}</Alert>}
+      {noDisponible && <Alert variant="secondary">{TEXTOS_OFFLINE.noDisponible}</Alert>}
 
       {resumen && (
         <>

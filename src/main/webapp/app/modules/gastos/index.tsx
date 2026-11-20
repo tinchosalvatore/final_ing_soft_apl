@@ -12,6 +12,8 @@ const MisGastosRoutes = () => (
     <Route index element={<MisGastos />} />
     <Route path="nuevo" element={<GastoForm />} />
     <Route path=":id/editar" element={<GastoForm />} />
+    {/* Spec 003, punto 11: "Reintentar" un pendiente rechazado */}
+    <Route path="pendiente/:clave/corregir" element={<GastoForm />} />
   </ErrorBoundaryRoutes>
 );
 

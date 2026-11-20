@@ -4,6 +4,9 @@ import { URL, fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { defineConfig, normalizePath } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
+import { VitePWA } from 'vite-plugin-pwa';
+
+import { pwaConfig } from './src/main/webapp/app/pwa/pwa.config';
 
 const { getAbsoluteFSPath } = await import('swagger-ui-dist');
 const swaggerUiPath = getAbsoluteFSPath();
@@ -14,6 +17,9 @@ const development = process.env.NODE_ENV !== 'production';
 const config = defineConfig({
   plugins: [
     react(),
+    // Spec 003 (ADR-0005): service worker generado por Workbox; toda la configuración está en app/pwa/pwa.config.ts.
+    // Solo en el build de producción (`npm start` y el build de dev no registran service worker).
+    VitePWA({ ...pwaConfig, disable: development }),
     viteStaticCopy({
       targets: [
         {
