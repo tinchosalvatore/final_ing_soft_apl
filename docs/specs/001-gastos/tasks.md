@@ -185,6 +185,25 @@ Notas para el coder:
 - **CA17:** pasa lo mismo. Hoy el DELETE responde 204 y el borrado falla recién en el flush, por la FK de `gasto.user_id`. El test espera 400 `error.usuariocongastos` y que el usuario y sus gastos sigan existiendo.
 - Los CA02, CA03 y CA04 por PATCH ya pasan con la implementación de la 001: quedan como regresión (hallazgo O3, faltaba la cobertura, no el comportamiento).
 
+## fix/001-patch: fase verde (agente coder, 2026-11-20)
+
+Plan: `plan-fix.md` (aprobado por el documentador).
+
+| # | Hallazgo | Cambio | Estado |
+|---|---|---|---|
+| F1 | O1: PATCH con descripción de más de 140 → 500 | `GastoService.validar` valida la descripción (también el valor final del PATCH) → 400 `fieldErrors[].field="descripcion"` | hecha |
+| F2 | 001-CA17 (O3): borrar un usuario con gastos | `UserService.deleteUser` → 400 `error.usuariocongastos` sin borrar nada; mensaje en `i18n/es/reglas.json` | hecha |
+| F3 | R2 del 000: el hash de S5 se aplicaba una sola vez | `runOnChange="true"` en el changeset de S5 | hecha |
+| F4 | O6 del 000: mail fijo en prod | `spring.mail.host: ${SPRING_MAIL_HOST:localhost}`, en `.env.example` y en `12-factors.md` §2 | hecha |
+| F5 | O2: `*.log*` ignoraba `gastos.logica.ts` | `.gitignore`: `*.log` y `*.log.*` | hecha |
+| F6 | Que una regeneración no pise lo propio | `.yo-resolve` (solo territorio del desarrollador) y ADR-0008 actualizado | hecha |
+
+### Evidencia (2026-11-20)
+- Tests de testing: `GastoPatchIT` 10/10 y `UsuarioConGastosIT` 2/2. Antes fallaban `descripcionLargaPorPatch` y `ca17BorrarUsuarioConGastos`.
+- `npm run ci:backend:test`: javadoc, checkstyle, 58 unit y 218 IT, todos en verde.
+- `npm run ci:frontend:test`: build prod y 181 Vitest, en verde. Ningún archivo propio ignorado por `.gitignore`.
+- `.yo-resolve`: las 11 rutas existen. El formato se verificó contra `@yeoman/conflicter`: `<glob> [estado]`, con `skip` por defecto.
+
 ## Notas para la próxima sesión
 - Los tests crean `ana` y `beto` y buscan las categorías por nombre o las crean, así funcionan antes y después de la carga inicial (CA14).
 - El E2E usa el usuario `user` de JHipster y una descripción única para encontrar la fila; si queda algo a medias, lo borra por API en el `afterEach`.
