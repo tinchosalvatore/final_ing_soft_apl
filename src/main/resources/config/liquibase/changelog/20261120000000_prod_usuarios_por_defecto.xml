@@ -10,9 +10,11 @@
         - Desactiva el usuario 'user' que carga JHipster desde data/user.csv.
         - Reemplaza el hash de 'admin' por el de la variable TRACKER_ADMIN_PASSWORD_HASH
           (spring.liquibase.parameters.adminPasswordHash en application-prod.yml).
-        Cambiar la variable después del primer arranque no tiene efecto: la contraseña se rota desde la UI.
+        runOnChange (R2 del verify del 000): Liquibase sustituye ${adminPasswordHash} antes de calcular el checksum, así que
+        si cambia TRACKER_ADMIN_PASSWORD_HASH el changeset vuelve a correr y rota la contraseña de admin (y vuelve a
+        desactivar 'user'). Si la variable no cambia, no corre.
     -->
-    <changeSet id="20261120000000-1" author="coder" context="prod and !secret-samples">
+    <changeSet id="20261120000000-1" author="coder" context="prod and !secret-samples" runOnChange="true">
         <!--
             Falla rápido: Spring pasa los parámetros de Liquibase sin resolver si falta la variable
             (queda el texto literal del placeholder). Si el valor no tiene forma de hash BCrypt
