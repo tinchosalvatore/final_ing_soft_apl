@@ -74,6 +74,10 @@ Si un comando de esta tabla deja de ser correcto (porque JHipster lo generó dis
 8. **Una rama por spec** (`spec/NNN-nombre`), con commits chicos y un PR a `main`. El CI tiene que quedar en verde.
 9. **Si el agente que implementa toma una decisión estructural, escribe un ADR** en `docs/adr/` con la plantilla de [docs/adr/README.md](docs/adr/README.md).
 10. **No agregues dependencias "por las dudas".** Cada dependencia nueva va con versión fija y se justifica en el `plan.md`.
+11. **Antes de pushear, corré lo mismo que el CI**: `npm run ci:backend:test` y `npm run ci:frontend:test` (y los E2E si tocaste UI). `./mvnw verify` **no alcanza**, porque no corre javadoc ni el build de producción del front.
+12. **Trampas conocidas del código generado:**
+    - Las clases propias que usan el metamodelo JPA (`Gasto_`, `Categoria_`...) lo importan con **wildcard** (`import com.trackergastos.domain.*;`), como el código generado. Con un import puntual, el javadoc del CI falla porque corre antes de compilar.
+    - El `.gitignore` generado tiene `*.log*`, que también ignora archivos como `algo.logica.ts` o `x.logger.ts`. No uses nombres con `.log` después de un punto. Antes de pushear, revisá `git status --ignored` si un archivo nuevo "no aparece".
 
 ---
 
@@ -127,4 +131,4 @@ Los agentes pwa y observabilidad escriben sus propios tests de integración y un
 - Las clases nuevas siguen el patrón Controller(Resource) → Service → Repository. ArchUnit lo controla.
 - Los tests nombran el criterio que cubren, por ejemplo `// Criterio 001-CA03` o `test('CA03 - ...')`, para que el verificador pueda trazarlos.
 - Los E2E se graban con `codegen` y se dejan en `src/test/javascript/playwright/e2e/` con extensión `.pw.ts`, usando locators por rol o texto ([guía testing](docs/catedra/testing.md)).
-- La tarea está terminada cuando: compila, los tests propios y los del tester pasan, el CI está en verde y `tasks.md` está actualizado.
+- La tarea está terminada cuando: compila, los tests propios y los del tester pasan (corridos con los scripts `ci:*`, regla 11), el CI está en verde y `tasks.md` está actualizado.
