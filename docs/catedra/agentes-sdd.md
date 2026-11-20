@@ -22,17 +22,31 @@ Responsable: todos los roles. La lee cualquier agente antes de su primera tarea 
 
 | Etapa | Quién | Produce | Gate (lo aprueba el humano) |
 |---|---|---|---|
-| 1. Especificar | Documentador + humano | `spec.md` (+ ADRs) | Spec revisada: no queda nada librado a interpretación |
-| 2. Tests | Tester (sesión nueva) | Tests que fallan, uno o más por criterio | Cada criterio tiene un test; los tests compilan y están en **rojo** |
-| 3. Planificar | Implementador (sesión nueva) | `plan.md` | Plan aprobado: archivos, ubicación de reglas, decisiones |
-| 4. Tareas | Implementador | `tasks.md` | — (se revisa junto con el plan) |
-| 5. Implementar | Implementador | Código + commits chicos en `spec/NNN-*` | Tests del tester en verde y CI en verde |
-| 6. Verificar | Verificador (sesión nueva) | `verify.md` | El humano lee `verify.md` y el PR, y decide el merge |
+| 1. Especificar | documentador + humano | `spec.md` (+ ADRs) | Spec revisada: no queda nada librado a interpretación |
+| 2. Tests | agente **testing** | Tests que fallan, uno o más por criterio | Cada criterio tiene un test; los tests compilan y están en **rojo** |
+| 3. Planificar | agente del tema (coder, ci, pwa, observabilidad) | `plan.md` | Plan aprobado: archivos, ubicación de reglas, decisiones |
+| 4. Tareas | agente del tema | `tasks.md` | — (se revisa junto con el plan) |
+| 5. Implementar | agente del tema | Código + commits chicos en `spec/NNN-*` | Tests en verde y CI en verde |
+| 6. Verificar | agente **seguridad** (no programó nada) | `verify.md` | El humano lee `verify.md` y el PR, y decide el merge |
 
 **Si un agente falla, primero se revisa la spec:** casi siempre falta algo ahí. Se corrige la spec (en el mismo PR) y se vuelve a la etapa que corresponda.
 
+### Secuencia completa de agentes
+| # | Agente | Qué hace |
+|---|---|---|
+| 1 | coder | Paso 000: genera la app desde `tracker.jh` |
+| 2 | testing | Tests de 001 y 002 en rojo (TDD) |
+| 3 | coder | Plan + implementación de 001 y después de 002 hasta poner esos tests en verde |
+| 4 | seguridad | `verify.md` de 000, 001 y 002 |
+| 5 | ci | Spec 005 (desde acá, todo entra por PR con el pipeline andando) |
+| 6 | testing → pwa | E2E de 003 en rojo → implementación de la PWA |
+| 7 | observabilidad | Spec 004 (con sus tests de integración); testing graba los E2E si hacen falta |
+| 8 | seguridad | `verify.md` de 003, 004 y 005; auditoría final de S1 a S10 y 12 factors |
+
+Una sesión por agente con nombre propio, que el humano después usa para estudiar ese tema. Si una sesión se llena de contexto (*context rot*), se abre otra con el mismo nombre que retoma desde `tasks.md` y `verify.md`.
+
 ## 3. Paso 000: generación base (sin spec)
-No tiene lógica de negocio: es la salida determinista de `tracker.jh`. Lo hace un implementador en la rama `spec/000-base`:
+No tiene lógica de negocio: es la salida determinista de `tracker.jh`. Lo hace el agente **coder** en la rama `spec/000-base`:
 1. Verificar los requisitos de `AGENTS.md` §3 (en especial la versión de Node).
 2. `npx generator-jhipster@9.4.0 jdl tracker.jh` en la raíz del repo. Si JHipster pregunta por conflictos en `.gitignore`, `AGENTS.md`, `CLAUDE.md` o `docs/`, responder `n`: son nuestros.
 3. Volver a agregar al `.gitignore` generado las líneas propias (`docs/enunciado.md`, `docs/defense/`, `.env`), si se perdieron.
@@ -55,7 +69,7 @@ Criterio: **qué tan difícil es deshacer lo que hace**, no qué tan difícil es
 
 ## 5. Cómo arrancar una sesión de agente (plantilla de pedido)
 ```
-Sos el agente <rol> del repo. Leé AGENTS.md y después solo lo que necesites.
+Sos el agente <coder|testing|ci|pwa|observabilidad|seguridad> del repo. Leé AGENTS.md y después solo lo que necesites.
 Tarea: <etapa> de la spec NNN (docs/specs/NNN-*/spec.md).
 Rama: spec/NNN-*. Al terminar: <artefacto que produce>.
 No hagas: <lo que el rol no toca, según AGENTS.md §6>.

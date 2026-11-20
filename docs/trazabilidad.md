@@ -7,7 +7,7 @@ Mapa de **concepto de la materia → dónde está en el repo → cómo se demues
 | Concepto | Spec / guía / ADR | Dónde (código o config) | Evidencia |
 |---|---|---|---|
 | Aplicación JHipster | `tracker.jh`, ADR-0001 | `.yo-rc.json`, `.jhipster/` | Regenerar desde `tracker.jh` reproduce el modelo |
-| PWA | Spec 003, `catedra/pwa.md`, ADR-0005 | `src/main/webapp/sw.ts`, `vite.config.ts`, `app/shared/offline/` | E2E 003-CA01 a CA11 |
+| PWA | Spec 003, `catedra/pwa.md`, ADR-0005 | `app/pwa/pwa.config.ts`, `app/pwa/offline-db.config.ts`, `app/shared/offline/` | E2E 003-CA01 a CA11 |
 | Tests de unidad | `catedra/testing.md` | `src/test/java/**/service/*Test.java`, `*.spec.ts` | Spec 002 completa con TDD |
 | Tests E2E (Playwright) | ADR-0003, `catedra/testing.md` | `src/test/javascript/playwright/e2e/negocio/` | Traces de codegen y reporte en el CI |
 | Logs (ELK) | Spec 004, `catedra/logs-elk.md`, ADR-0004 | `src/main/docker/elk.yml`, `src/main/docker/elk/` | Discover, dashboard "Salud", alerta de logins fallidos |
@@ -46,7 +46,7 @@ Detalle en `catedra/seguridad.md`.
 | S6 Secreto JWT por entorno | A04 | `application-prod.yml` | Gitleaks |
 | S7 Errores sin filtrar información interna | A10 | `ExceptionTranslator` | 004-CA05 |
 | S8 Eventos de seguridad y alerta | A09 / A07 | Spec 004 | 004-CA01, CA03, CA08 |
-| S9 Limpieza local al cerrar sesión | Datos sensibles | `sw.ts`, módulo offline | 003-CA09, CA10 |
+| S9 Limpieza local al cerrar sesión | Datos sensibles | Módulo offline (`app/shared/offline/`) | 003-CA09, CA10 |
 | S10 Solo ADMIN escribe categorías | A01 | `CategoriaResource` | 001-CA11 |
 | Controles en el CI | A03, A05, A08 | `pipeline.yml` | Spec 005 |
 

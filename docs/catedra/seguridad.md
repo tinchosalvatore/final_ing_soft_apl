@@ -1,6 +1,6 @@
 # Guía: seguridad (OWASP)
 
-Responsable: el implementador de cada spec. El verificador revisa la sección 2 en cada PR. La sección 4 la usa el humano para la defensa.
+Responsable: el agente de cada tema implementa; el agente **seguridad** (verificador) revisa la sección 2 en cada PR y es el interlocutor para estudiar el tema. La sección 4 la usa el humano para la defensa.
 
 ## 1. Enfoque
 Hay dos capas, y el proyecto tiene que mostrar las dos:
@@ -19,7 +19,7 @@ Hay dos capas, y el proyecto tiene que mostrar las dos:
 | **S6** | **Secreto JWT fuera del código**, distinto por entorno | **A04 Fallas criptográficas** / gestión de secretos | `application-prod.yml` → variable de entorno | Gitleaks |
 | **S7** | **Errores sin filtrar información interna.** El manejador global de JHipster (`ExceptionTranslator`) devuelve mensajes genéricos (sin stack, clases ni SQL); el detalle va solo al log | **A10 Manejo inadecuado de condiciones excepcionales** y principio 7 (errores y logging) | `ExceptionTranslator` (perfil prod) | 004-CA05 |
 | **S8** | **Registro de eventos de seguridad sin datos sensibles** (`LOGIN_FALLIDO`, `GASTO_AJENO`, `ACCESO_DENEGADO`) y alerta por intentos de login fallidos | **A09 Fallas en el registro y monitoreo** y **A07 Fallas de autenticación** (detectar fuerza bruta) | Spec 004 | 004-CA01, CA03, CA08 |
-| **S9** | **Limpieza de datos locales al cerrar sesión** (caché de la API e IndexedDB) | **Exposición de datos sensibles** en dispositivos compartidos | `sw.ts` + módulo offline | 003-CA09, CA10 |
+| **S9** | **Limpieza de datos locales al cerrar sesión** (caché de la API e IndexedDB) | **Exposición de datos sensibles** en dispositivos compartidos | Módulo offline (`app/shared/offline/`) | 003-CA09, CA10 |
 | **S10** | **Categorías: solo ADMIN escribe** (`@PreAuthorize`) | **A01** (escalada de privilegios) | `CategoriaResource` | 001-CA11 |
 
 S1, S2 y S3 son **las defensas en código para mostrar en la defensa oral**: ahí el código generado por JHipster era vulnerable y se corrigió a propósito.

@@ -1,31 +1,38 @@
-# ADR-0005: PWA con Workbox y gastos pendientes en IndexedDB
+# ADR-0005: PWA con Workbox parametrizado y gastos pendientes en IndexedDB
 
-- Estado: Aceptado
+- Estado: Aceptado (revisado el 2026-11-20, antes de implementar: se pasó de `injectManifest` a `generateSW` parametrizado)
 - Fecha: 2026-11-20
 
 ## Contexto
-- La cátedra pidió desarrollar la PWA con **Workbox**, no con un service worker en JS puro.
-- El frontend React de JHipster 9.4 compila con Vite y **no genera** service worker ni manifest listos para usar: hay que sumarlos.
-- La spec 003 pide dos cosas: consultar gastos sin conexión y **cargarlos** sin conexión para que se sincronicen al volver la red.
-- La sesión es un JWT que vence. Un gasto encolado offline puede intentar enviarse cuando el token ya no sirve.
+- La cátedra pidió desarrollar la PWA con **Workbox, parametrizándolo por configuración**, y explícitamente **no** con un service worker escrito a mano (en JS puro o equivalente).
+- El frontend React de JHipster 9.4 compila con Vite y **no genera** service worker ni manifest listos para usar.
+- La spec 003 pide consultar gastos sin conexión y **cargarlos** sin conexión para que se sincronicen al volver la red.
+- La sesión es un JWT que vence: un gasto encolado offline puede intentar enviarse cuando el token ya no sirve.
 
 ## Decisión
-- **Service worker con Workbox**, integrado con `vite-plugin-pwa` en modo `injectManifest`. El archivo `src/main/webapp/sw.ts` usa explícitamente `workbox-precaching` (app shell), `workbox-routing` y `workbox-strategies`.
-- **Estrategias de caché:**
+- **Service worker generado por Workbox** (`vite-plugin-pwa` en modo **`generateSW`**). No hay ningún archivo de service worker escrito a mano.
+- **Toda la parametrización vive en un archivo propio y legible**, `src/main/webapp/app/pwa/pwa.config.ts`, que exporta:
+  - el **manifest** (nombre, íconos, colores, `display`);
+  - la configuración de **precache** del app shell (`globPatterns`, `navigateFallback`);
+  - las **estrategias de caché en runtime** (`runtimeCaching`), una entrada por tipo de recurso, con su `handler` (`NetworkFirst`, `NetworkOnly`, etc.), `cacheName`, `expiration` y `cacheableResponse`.
+
+  `vite.config.ts` solo importa ese objeto y se lo pasa al plugin.
+- **Estrategias:**
   - App shell (HTML, JS, CSS, íconos): precache.
-  - `GET /api/gastos*`, `GET /api/categorias*` y `GET /api/resumen*`: **NetworkFirst** (dato fresco si hay red y último conocido si no), solo para respuestas 200.
+  - `GET /api/gastos*`, `/api/categorias*` y `/api/resumen*`: **NetworkFirst**, caché `api-v1`, solo respuestas 200 y hasta 50 entradas.
   - El resto de `/api/**` (incluida la autenticación): **NetworkOnly**.
-- **Gastos cargados offline:** los guarda **la app** (no el service worker) en **IndexedDB**, como pendientes. Al volver la conexión, o al abrir la app con conexión, la app los envía con el token vigente.
-- **Al cerrar sesión** se borran las cachés de la API y los pendientes de IndexedDB.
+- **Base offline parametrizada** en `src/main/webapp/app/pwa/offline-db.config.ts`: nombre y versión de la base IndexedDB, *object stores* e índices (store `pendientes`, índice por `login`).
+- **Gastos cargados offline:** los guarda **la app** en IndexedDB como pendientes y los envía al volver la conexión con el token vigente.
+- **Al cerrar sesión**, la app borra la caché `api-v1` (Cache Storage es accesible desde la página, no hace falta código en el service worker) y los pendientes del usuario.
 
 ## Consecuencias
-- Workbox se ve explícito en el código: cada estrategia está nombrada en `sw.ts`.
-- Como la app controla la sincronización, un gasto pendiente nunca se pierde por un token vencido: espera a que haya una sesión válida.
-- La sincronización ocurre solo con la app abierta (no hay sincronización en segundo plano con la app cerrada).
-- `NetworkFirst` sobre la API es un riesgo de privacidad en dispositivos compartidos. Por eso es obligatorio limpiar al cerrar sesión.
+- Workbox se usa como lo pidió la cátedra: **declarativo**. Para defender cada decisión de caché alcanza con leer `pwa.config.ts`.
+- No hay código de service worker para mantener; actualizar Workbox es actualizar el plugin.
+- Como la sincronización la controla la app, un pendiente nunca se pierde por un token vencido. Contra: solo sincroniza con la app abierta.
+- `NetworkFirst` sobre la API es un riesgo de privacidad en dispositivos compartidos, por eso es obligatorio limpiar al cerrar sesión.
 
 ## Alternativas
-- **`workbox-background-sync` (cola en el service worker):** reintenta incluso con la app cerrada, pero reenvía la petición original con el token viejo. Si el token venció, el servidor responde 401 y Workbox da el envío por exitoso, así que el gasto se pierde. Descartado.
-- **Modo `generateSW`:** menos código, pero las estrategias quedan escondidas en la configuración y la decisión no se ve. Descartado.
-- **Service worker en JS puro:** lo descartó la cátedra.
-- **El service worker de Angular:** ver ADR-0001.
+- **Service worker escrito a mano (JS puro o `injectManifest` con un `sw.ts` propio):** es lo que la cátedra pidió no hacer. Descartado.
+- **`workbox-background-sync` (cola en el service worker):** reenvía la petición original con el token viejo. Si el token venció, el servidor responde 401, Workbox lo da por enviado y el gasto se pierde. Descartado.
+- **`workbox-recipes`:** esconden las estrategias. Se prefiere `runtimeCaching` explícito.
+- **El service worker de Angular (`ngsw-config.json`):** ver ADR-0001.
