@@ -15,7 +15,8 @@ Los agentes generan código más rápido de lo que una persona puede revisarlo l
 | **Verde / rojo** | El pipeline terminó con todas las verificaciones aprobadas / con al menos una fallida. |
 | **Umbral de merge** | Las condiciones mínimas para que un cambio se pueda integrar a `main`. |
 | **Secreto** | Credencial, token o clave privada. |
-| **Vulnerabilidad conocida** | Una dependencia con una vulnerabilidad publicada de severidad alta o crítica que ya tiene versión corregida. |
+| **Dependencia de producción** | Una librería que viaja dentro de la aplicación que se ejecuta (backend y frontend compilado). Las herramientas que solo se usan para compilar o testear (dependencias de desarrollo) no cuentan. |
+| **Vulnerabilidad conocida** | Una **dependencia de producción** con una vulnerabilidad publicada de severidad alta o crítica que ya tiene versión corregida. |
 
 ## 3. Comportamiento esperado
 1. El pipeline corre automáticamente en **cada PR** contra `main` y en cada actualización del PR. También corre al integrar en `main`.
@@ -38,6 +39,8 @@ Los agentes generan código más rápido de lo que una persona puede revisarlo l
 - PR que solo cambia documentación → el pipeline corre igual (es barato y mantiene la regla simple).
 - Hallazgo de seguridad falso positivo → se puede excluir de forma explícita y comentada en la configuración de la herramienta, nunca desactivando la verificación entera.
 - Vulnerabilidad sin versión corregida disponible → no bloquea, pero aparece en el log del pipeline.
+- La verificación de dependencias **no logra analizar** alguna parte (por ejemplo, no puede resolver las dependencias del backend) → **falla**. Un control que pasa en verde sin haber analizado nada es peor que no tenerlo. *(Hallazgo del agente ci: Trivy pasaba en verde sin analizar Maven.)*
+- Vulnerabilidad en una dependencia de desarrollo → no bloquea (no viaja en la app ejecutable).
 - Test E2E inestable → hasta 2 reintentos automáticos. Si falla 3 veces, queda rojo.
 
 ## 5. Criterios de aceptación
