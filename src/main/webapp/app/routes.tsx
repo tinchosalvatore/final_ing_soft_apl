@@ -18,6 +18,8 @@ const loading = <div>loading ...</div>;
 const Account = React.lazy(() => import('app/modules/account'));
 
 const Admin = React.lazy(() => import('app/modules/administration'));
+
+const MisGastos = React.lazy(() => import('app/modules/gastos'));
 const AppRoutes = () => {
   return (
     <div className="view-routes">
@@ -42,6 +44,14 @@ const AppRoutes = () => {
               <Route path="finish" element={<PasswordResetFinish />} />
             </Route>
           </Route>
+          <Route
+            path="mis-gastos/*"
+            element={
+              <PrivateRoute hasAnyAuthorities={[Authority.USER]}>
+                <MisGastos />
+              </PrivateRoute>
+            }
+          />
           <Route
             path="admin/*"
             element={

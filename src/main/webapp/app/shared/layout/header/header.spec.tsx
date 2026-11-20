@@ -91,8 +91,10 @@ describe('Header', () => {
     expect(html).toContain('navbar');
     // Not find AdminMenu component
     expect(html).not.toContain('admin-menu');
-    // Find EntitiesMenu component
-    expect(html).toContain('entity-menu');
+    // Ajuste del coder (spec 001 regla 14, ADR-0008): un USER ve "Mis gastos" y no el menú generado de entidades
+    expect(html).not.toContain('entity-menu');
+    expect(html).toContain('Mis gastos');
+    expect(html).not.toContain('Categorías');
     // Find AccountMenu component
     expect(html).toContain('account-menu');
   });
