@@ -12,7 +12,7 @@
 | 5 | `plan.md` con el mecanismo de S5 | paso 6 | en curso (esperando aprobación) | |
 | 6 | Factores III, VII, IX en `application-prod.yml` + `.env.example` | paso 6 | pendiente | |
 | 7 | S5: changelog `context="prod and !secret-samples"` + ajuste de `application-secret-samples.yml` | S5 | pendiente | |
-| 8 | Verificar a mano el jar con perfil `prod` contra Postgres (user desactivado, admin con el hash del entorno) | S5 | pendiente | |
+| 8 | Verificar con dos corridas contra Postgres: con contexts `prod, secret-samples` el changeset NO corre; con solo `prod` SÍ corre (user desactivado, admin con el hash del entorno). Evidencia acá abajo | S5 | pendiente | |
 | 9 | Push y PR a `main` (con confirmación del humano) | paso 7 | pendiente | |
 
 ## Notas para la próxima sesión

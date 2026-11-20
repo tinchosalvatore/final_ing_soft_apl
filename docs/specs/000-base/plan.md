@@ -1,7 +1,7 @@
 # Plan — Spec 000 (generación base)
 
 - Autor: agente coder (sesión `coder`, 2026-11-20)
-- Estado: Borrador
+- Estado: Borrador (decisiones §6 revisadas con el documentador; falta la aprobación del humano)
 
 <!-- Lo escribe el implementador ANTES de codear. No se codea hasta que el humano lo apruebe. -->
 
@@ -52,12 +52,18 @@ Ninguna.
 
 ## 6. Decisiones pendientes (para el humano)
 
-1. **Aprobar el mecanismo de S5** (changeset Liquibase `context="prod"` + hash BCrypt por variable de entorno). Alternativa descartada: un `ApplicationRunner` Java con `@Profile("prod")` que lee la contraseña en claro, la hashea y la actualiza en cada arranque; permite rotar la contraseña cambiando la variable, pero agrega código propio que corre en cada inicio y deja la contraseña en claro en el entorno.
-2. **Rotación:** con el changeset, el hash se aplica **una sola vez** (cuando el changeset corre por primera vez en esa base). Para cambiar la contraseña después, `admin` la cambia desde la UI (Cuenta → Contraseña). ¿Está bien así?
-3. **`secret-samples` en el CI/E2E y en `src/main/docker/app.yml`:** propongo dejarlos como los generó JHipster (con S5 excluido en ese perfil, decisión 4) y no tocar el pipeline. El "prod real" es `SPRING_PROFILES_ACTIVE=prod` + `.env`. ¿De acuerdo?
+Revisadas con el documentador (2026-11-20). Falta la aprobación del humano.
+
+1. **Mecanismo de S5:** el changeset de Liquibase con `context="prod and !secret-samples"` y el hash BCrypt por variable de entorno. Se descartó un `ApplicationRunner` Java con `@Profile("prod")` que leyera la contraseña en claro y la hasheara en cada arranque: agrega código que corre en cada inicio y deja la contraseña en texto plano en el entorno.
+2. **Rotación:** el hash se aplica una sola vez. Después, `admin` cambia la contraseña desde la UI (Cuenta → Contraseña).
+3. **`secret-samples` sin S5:** no se tocan el pipeline ni `src/main/docker/app.yml`. Un despliegue real es solo el perfil `prod` más variables de entorno (`12-factors.md` §2). El agente seguridad lo audita en el `verify.md`.
 
 ## 7. Riesgos
 
 - Si alguien levanta prod sin `TRACKER_ADMIN_PASSWORD_HASH`, `SPRING_DATASOURCE_URL` o el secreto JWT, la app **no arranca** (fail-fast). Es intencional y queda explicado en `.env.example`.
 - Si alguien despliega de verdad con `secret-samples` activo, quedan `admin/admin`, `user/user` y el secreto JWT de ejemplo. Lo mitiga la decisión 3 (documentarlo) y lo audita el agente seguridad en el `verify.md`.
 - Sin el perfil de muestras no hay una prueba automática de que el changeset de prod corre bien. Lo verifico a mano levantando el jar con `prod` contra el Postgres de `src/main/docker/postgresql.yml` y queda anotado en `tasks.md`.
+- **Limitación conocida:** cambiar `TRACKER_ADMIN_PASSWORD_HASH` después del primer arranque no tiene efecto, porque el changeset ya corrió en esa base. La contraseña se rota desde la UI.
+- **Gitleaks:** `application-secret-samples.yml` trae un `base64-secret` de alta entropía y el paso 1 del pipeline puede marcarlo. Si pasa, se agrega a `.gitleaksignore` el fingerprint de ese hallazgo, con el comentario "secreto de muestra de JHipster, solo perfil secret-samples" (`ci.md` §2.5). La regla no se desactiva.
+- **`$` del hash BCrypt en el `.env` de docker compose:** compose lee cada `$` como una variable. En `.env.example` se indica escribir el valor entre comillas simples o con `$$`. Si no, la contraseña de `admin` queda mal sin ningún error.
+- **Contextos de Liquibase:** se verifica con dos corridas que, con `contexts: prod, secret-samples`, el changeset **no** corre y que, con solo `prod`, **sí** corre. La evidencia queda en `tasks.md` (tarea 8).
