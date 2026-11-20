@@ -37,5 +37,8 @@ export const moverMes = (mes: string, delta: number): string => {
   return `${nuevoAnio}-${String(nuevoMes).padStart(2, '0')}`;
 };
 
+/** El primer mes que se puede pedir (spec 002, punto 6): en él se deshabilita "Mes anterior". */
+export const PRIMER_MES = '2000-01';
+
 /** El mes que contiene a "hoy" en Buenos Aires, como `AAAA-MM`. */
 export const mesActual = (hoy: string): string => hoy.slice(0, 7);

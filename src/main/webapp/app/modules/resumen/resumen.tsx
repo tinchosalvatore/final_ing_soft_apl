@@ -6,7 +6,15 @@ import { cargarConCache } from 'app/shared/offline/conexion';
 import { TEXTOS_OFFLINE } from 'app/shared/offline/textos';
 
 import { ResumenMensual, obtenerResumen } from './resumen.api';
-import { formatearDiferencia, formatearPorcentaje, formatearVariacion, mesActual, moverMes, sentidoVariacion } from './resumen.reglas';
+import {
+  PRIMER_MES,
+  formatearDiferencia,
+  formatearPorcentaje,
+  formatearVariacion,
+  mesActual,
+  moverMes,
+  sentidoVariacion,
+} from './resumen.reglas';
 import { TEXTOS_RESUMEN as T } from './textos';
 
 /**
@@ -38,7 +46,8 @@ export const Resumen = () => {
     <div>
       <h2>{T.titulo}</h2>
       <div className="d-flex align-items-center gap-3 mb-3">
-        <Button variant="outline-secondary" onClick={() => setMes(m => moverMes(m, -1))}>
+        {/* Spec 002, punto 7: el anterior se deshabilita en el primer mes que se puede pedir (2000-01) */}
+        <Button variant="outline-secondary" disabled={mes <= PRIMER_MES} onClick={() => setMes(m => moverMes(m, -1))}>
           {T.mesAnterior}
         </Button>
         <strong aria-live="polite">{mes}</strong>
