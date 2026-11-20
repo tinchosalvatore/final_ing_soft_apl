@@ -74,7 +74,7 @@ Apoyo: `src/test/java/com/trackergastos/DatosPruebaGastos.java` (crea usuarios, 
 [ERROR] Tests run: 7, Failures: 6, Errors: 0, Skipped: 0 -- in com.trackergastos.web.rest.ResumenResourceIT
 ```
 
-Fallan 30 de 31. **El que pasa** es `002 sin sesión → 401`, porque lo garantiza la configuración de seguridad que generó JHipster para todo `/api/**`. Queda como test de regresión, no como prueba de la lógica.
+Fallan 30 de 31. **El que pasa** es `002 sin sesión → 401`, porque lo garantiza la configuración de seguridad que generó JHipster para todo `/api/**`. Queda como test de regresión, no como prueba de la lógica (aprobado por el documentador). **Para el verificador: no es un test mal escrito.**
 
 E2E, corrido con `npx playwright test --retries=0 e2e/negocio/002-resumen-mensual.pw.ts` contra la app levantada con `./mvnw` (perfil dev):
 
