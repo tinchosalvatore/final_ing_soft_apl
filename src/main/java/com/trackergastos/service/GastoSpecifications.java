@@ -1,9 +1,8 @@
 package com.trackergastos.service;
 
-import com.trackergastos.domain.Categoria_;
-import com.trackergastos.domain.Gasto;
-import com.trackergastos.domain.Gasto_;
-import com.trackergastos.domain.User_;
+// Wildcard a propósito, como en el GastoQueryService generado: el metamodelo (Gasto_, ...) lo genera el compilador y
+// `javadoc:javadoc` (paso backend:doc:test del CI) corre sin compilar. Un import puntual de una clase *_ lo rompe.
+import com.trackergastos.domain.*; // for static metamodels
 import org.springframework.data.jpa.domain.Specification;
 
 /**

@@ -74,7 +74,7 @@ public class GastoQueryService extends QueryService<Gasto> {
 
     /**
      * Function to convert {@link GastoCriteria} to a {@link Specification}
-     * @param criteria The object which holds all the filters, which the entities should match.
+     * @param criteriaDelCliente The object which holds all the filters, which the entities should match. Su criterio de usuario se descarta (S2).
      * @return the matching {@link Specification} of the entity.
      */
     protected Specification<Gasto> createSpecification(GastoCriteria criteriaDelCliente) {
