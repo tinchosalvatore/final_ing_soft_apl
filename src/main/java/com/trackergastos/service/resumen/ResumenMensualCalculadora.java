@@ -3,11 +3,13 @@ package com.trackergastos.service.resumen;
 import com.trackergastos.service.dto.GastoDTO;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.Collator;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -23,6 +25,19 @@ public class ResumenMensualCalculadora {
 
     /** Participación y variación: 1 decimal, la mitad hacia arriba (spec 002, punto 3.3). */
     private static final int ESCALA_PORCENTAJE = 1;
+
+    /**
+     * Desempate por nombre (spec 002, punto 4): orden alfabético del español, sin distinguir mayúsculas ni acentos
+     * ("almacén" < "Óptica" < "Peluquería"). {@code String.compareTo} ordena por código Unicode y pone las mayúsculas y
+     * las vocales acentuadas fuera de lugar.
+     */
+    private static final Comparator<Object> ORDEN_ESPANOL = nuevoCollatorEspanol();
+
+    private static Collator nuevoCollatorEspanol() {
+        Collator collator = Collator.getInstance(Locale.forLanguageTag("es-AR"));
+        collator.setStrength(Collator.PRIMARY);
+        return collator;
+    }
 
     /**
      * @param mes   el mes a resumir.
@@ -71,7 +86,9 @@ public class ResumenMensualCalculadora {
             filas.add(fila);
         });
         // Punto 4: total de mayor a menor; a igual total, por nombre (002-CA09)
-        filas.sort(Comparator.comparing(CategoriaResumenDTO::getTotal).reversed().thenComparing(CategoriaResumenDTO::getNombre));
+        filas.sort(
+            Comparator.comparing(CategoriaResumenDTO::getTotal).reversed().thenComparing(CategoriaResumenDTO::getNombre, ORDEN_ESPANOL)
+        );
         return filas;
     }
 
