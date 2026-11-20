@@ -1,7 +1,7 @@
 # Plan — Spec 002 (resumen mensual)
 
 - Autor: agente coder (sesión `coder`, 2026-11-20)
-- Estado: Borrador
+- Estado: Aprobado (documentador, con delegación del humano, 2026-11-20)
 
 <!-- Lo escribe el implementador ANTES de codear. No se codea hasta que el humano lo apruebe. -->
 
@@ -61,19 +61,12 @@ Ninguna.
 2. **El cálculo se hace en memoria** con los gastos de dos meses de un usuario. Es un volumen chico, y la calculadora pura es la que pide el contrato de testing. Una agregación en SQL (`GROUP BY`) sería más rápida con muchos datos, pero duplicaría las reglas de redondeo.
 3. **`MesInvalidoException extends ReglaDeNegocioException`**: reusa la traducción a 400 `error.<clave>` de la 001.
 
-## 6. Decisiones pendientes
+## 6. Decisiones (resueltas por el documentador, 2026-11-20; en la spec §5.1)
 
-Las consulto primero con el documentador.
-
-1. **Variación exactamente 0 %** (mismo total que el mes anterior, distinto de 0). La spec dice "Aumento" o "Baja". Propuesta: mostrar "Sin cambios" y `0,0 %`. Es un texto nuevo, y no lo usa ningún E2E.
-2. **Formato de la diferencia en pesos.** La spec no lo fija. Propuesta: con signo delante, `+$ 200,00` / `-$ 200,00`, igual que la variación porcentual.
-3. **Integrar la 001 en la rama de la 002.** La 002 necesita el código de la 001: el filtro por dueño, para CA08, y "Mis gastos", para el E2E CA12. Propuesta:
-   - Mergear `spec/001-gastos` en `spec/002-resumen-mensual` ahora.
-   - Cuando el PR #5 entre en `main`, mergear `main` otra vez.
-   - Hasta entonces, el PR #6 muestra también los commits de la 001.
-
-   La alternativa es esperar a que se mergee el PR #5 antes de seguir.
-4. **¿El menú "Resumen" va al lado de "Mis gastos"?** Propuesta: sí, para todos los usuarios con sesión.
+1. **Variación de exactamente 0 %:** se muestra "Sin cambios" con `0,0 %`.
+2. **Diferencia en pesos:** con signo, `+$ 200,00` / `-$ 200,00` / `$ 0,00`.
+3. **Rama:** se mergea `spec/001-gastos` en `spec/002` **después** del fix de javadoc del PR #5, y `main` otra vez cuando entre el #5.
+4. **Menú:** "Resumen" va al lado de "Mis gastos", para todo usuario con sesión.
 
 ## 7. Riesgos
 
