@@ -77,6 +77,31 @@ Además del objetivo de producto hay un objetivo de seguridad: **los gastos son 
 | 001-CA14 | Categorías iniciales | Sistema recién instalado | Existen las 6 categorías del punto 13 |
 | 001-CA15 | Flujo E2E | En el navegador, `user` inicia sesión, carga un gasto, lo ve en "Mis gastos", lo edita y lo borra | Cada paso se refleja en pantalla |
 
+## 5.1 Contrato observable (para escribir los tests)
+No describe *cómo* se implementa: fija lo que un test puede observar desde afuera (API y textos de la interfaz), para que el agente testing no tenga que inventarlo. Se agregó a pedido del agente testing durante la fase roja.
+
+### API
+| Situación | Respuesta |
+|---|---|
+| Validación de un campo (001-CA02, CA03) | **400**, *problem* de JHipster, con `fieldErrors[].field` = `monto` o `fecha` (aunque la regla se valide en el service) |
+| Nombre de categoría duplicado (001-CA12) | **400**, *problem* con `message` = `error.nombreduplicado` |
+| Borrar categoría en uso (001-CA13) | **400**, *problem* con `message` = `error.categoriaenuso` |
+| Gasto ajeno o inexistente en GET, PUT, PATCH o DELETE (001-CA07, CA08) | **404** en todos los casos, también para un id inexistente. El cuerpo es igual en los dos casos, salvo los campos que contienen el id o la ruta (`instance`, `path`) |
+| Sin sesión (001-CA10) | **401** |
+| USER que escribe categorías (001-CA11) | **403** |
+| Orden del listado (punto 4) | El backend **impone siempre** fecha descendente y después id descendente. Si el cliente manda otro `sort`, se ignora |
+
+### Interfaz (textos que usan los E2E)
+| Elemento | Texto |
+|---|---|
+| Menú | "Mis gastos", "Resumen" (y "Categorías" solo para ADMIN) |
+| Botón para crear | "Nuevo gasto" |
+| Labels del formulario | "Monto", "Fecha", "Categoría", "Descripción" |
+| Botones del formulario | "Guardar", "Cancelar" |
+| Acciones por fila | "Editar", "Borrar" |
+| Confirmación de borrado | Diálogo con el botón "Confirmar" |
+| Formato de montos | `$ 1.500,50` (es-AR: punto de miles, coma decimal) |
+
 ## 6. Fuera de alcance
 - Ingresos, saldos y cuentas bancarias.
 - Múltiples monedas (todo es en pesos).
