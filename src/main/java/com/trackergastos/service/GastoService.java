@@ -142,8 +142,13 @@ public class GastoService {
             .orElse(false);
     }
 
-    /** Hoy en {@link #ZONA_HOY}. */
-    static LocalDate hoy() {
+    /**
+     * Hoy en {@link #ZONA_HOY}. Es la única definición de "hoy" del sistema: la usan la spec 001 (fecha no futura) y la
+     * spec 002 (mes actual del resumen).
+     *
+     * @return la fecha actual en Buenos Aires.
+     */
+    public static LocalDate hoy() {
         return LocalDate.now(ZONA_HOY);
     }
 
