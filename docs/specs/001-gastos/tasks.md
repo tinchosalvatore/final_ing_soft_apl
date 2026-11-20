@@ -157,6 +157,34 @@ Plan: `plan.md` (aprobado). Decisión estructural: **ADR-0008**.
 - Los textos del módulo están en `textos.ts` y no en un JSON de i18n (ADR-0008). Solo las claves de error de negocio van en `i18n/es/reglas.json`.
 - El CRUD generado de gastos sigue accesible escribiendo `/gasto` en la URL, pero el backend aplica las mismas reglas.
 
+## Fase roja de `fix/001-patch` (agente testing, hallazgos O1 y O3 del verify y regla 17)
+
+| Archivo | Test (`@DisplayName`) | Criterio | Hoy en `main` |
+|---|---|---|---|
+| `web/rest/GastoPatchIT.java` | `001-CA02 monto inválido por PATCH` (0; -10; 12.345; 10000000.01) | CA02 (O3) | pasa (regresión) |
+| | `001-CA03 fecha futura por PATCH` | CA03 (O3) | pasa (regresión) |
+| | `001-CA04 dueño forzado por PATCH` | CA04 (O3) | pasa (regresión) |
+| | `001-regla2 descripción de 141 caracteres al crear` | regla 2 | pasa (regresión) |
+| | `001-regla2 descripción de 141 caracteres por PUT` | regla 2 | pasa (regresión) |
+| | `001-regla2 descripción de 141 caracteres por PATCH (O1)` | regla 2, O1 | **rojo** |
+| | `001-regla2 borde: descripción de 140 caracteres por PATCH se acepta` | §4 | pasa (regresión) |
+| `web/rest/UsuarioConGastosIT.java` | `001-CA17 borrar un usuario con gastos: 400 error.usuariocongastos ...` | CA17 | **rojo** |
+| | `001-CA17 borde: borrar un usuario sin gastos se permite` | CA17 | pasa (regresión) |
+
+Salida (`-Dit.test='GastoPatchIT,UsuarioConGastosIT'`):
+
+```
+[ERROR] GastoPatchIT.descripcionLargaPorPatch -- Status expected:<400> but was:<200>
+[ERROR] Tests run: 10, Failures: 1 -- in GastoPatchIT
+[ERROR] UsuarioConGastosIT.ca17BorrarUsuarioConGastos -- Status expected:<400> but was:<204>
+[ERROR] Tests run: 2, Failures: 1 -- in UsuarioConGastosIT
+```
+
+Notas para el coder:
+- **O1 da 200 en el test y 500 en la app real.** El test es `@Transactional`: el PATCH no valida el largo, y Postgres rechaza el `varchar(140)` recién al hacer el flush, que en la app ocurre al commitear la petición (de ahí el 500). El test espera 400 con `fieldErrors[].field = "descripcion"` antes de llegar a la base.
+- **CA17:** pasa lo mismo. Hoy el DELETE responde 204 y el borrado falla recién en el flush, por la FK de `gasto.user_id`. El test espera 400 `error.usuariocongastos` y que el usuario y sus gastos sigan existiendo.
+- Los CA02, CA03 y CA04 por PATCH ya pasan con la implementación de la 001: quedan como regresión (hallazgo O3, faltaba la cobertura, no el comportamiento).
+
 ## Notas para la próxima sesión
 - Los tests crean `ana` y `beto` y buscan las categorías por nombre o las crean, así funcionan antes y después de la carga inicial (CA14).
 - El E2E usa el usuario `user` de JHipster y una descripción única para encontrar la fila; si queda algo a medias, lo borra por API en el `afterEach`.
