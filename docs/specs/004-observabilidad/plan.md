@@ -1,7 +1,7 @@
 # Plan — Spec 004
 
 - Autor: agente observabilidad (2026-11-20)
-- Estado: Borrador (pendiente de aprobación del documentador)
+- Estado: Aprobado por el documentador (2026-11-20)
 
 ## 1. Resumen de la solución
 Se activa el appender de Logstash que ya trae JHipster (por variables de entorno, ADR-0004) y cada evento de la spec se escribe con `StructuredArguments.kv(...)`, para que `evento` y sus datos lleguen como campos JSON. Un filtro dentro de la cadena de seguridad pone `usuario` en el MDC y escribe `PETICION_HTTP`. Micrometer Tracing (Brave, sin exportar spans) aporta `traceId`/`spanId`. ELK corre con un `docker compose` propio, sin filtros en Logstash, y lo de Kibana queda exportado al repo.
@@ -41,7 +41,7 @@ Se activa el appender de Logstash que ya trae JHipster (por variables de entorno
 | Dependencia | Versión | Por qué |
 |---|---|---|
 | `net.logstash.logback:logstash-logback-encoder` | `9.0` (la de `jhipster-parent` 9.4) | `jhipster-framework` la declara `optional`: sin ella el appender de Logstash y `kv(...)` no existen |
-| `org.springframework.boot:spring-boot-micrometer-tracing-brave` | gestionada por Spring Boot 4.1.1 | no hay bridge de tracing en el árbol: sin él no hay `traceId` en el MDC (la guía lo prevé). No se exportan spans (sin Zipkin) |
+| `org.springframework.boot:spring-boot-micrometer-tracing-brave` + `io.micrometer:micrometer-tracing-bridge-brave` | gestionadas por Spring Boot 4.1.1 | no hay tracing en el árbol: sin esto no hay `traceId` en el MDC (la guía lo prevé). En Boot 4 la autoconfiguración y el bridge son artefactos separados: hacen falta los dos. No se exportan spans (sin Zipkin) |
 
 ## 5. Decisiones tomadas por el agente
 - `PETICION_HTTP` se registra dentro de la cadena de seguridad (después del filtro de JWT) para tener `usuario`. Consecuencia: una petición con un token **inválido** (rechazada por el propio filtro JWT) no genera `PETICION_HTTP`; sin token sí (401).
@@ -50,9 +50,14 @@ Se activa el appender de Logstash que ya trae JHipster (por variables de entorno
 - Los tests capturan con un `ListAppender` de Logback y serializan cada evento con el `LogstashEncoder`: se valida el JSON real que llega a Logstash.
 - El arreglo del usuario desactivado va en el controller y no en `DomainUserDetailsService`, para no romper su test generado.
 
+- **Login con forma de email** (decidido por el documentador): `LOGIN_FALLIDO` lo registra enmascarado, `a***@dominio.com`.
+- **ELK 9.5.5 sin seguridad:** en esa versión las reglas de alerta funcionan con `xpack.security.enabled=false` (`/api/alerting/_health` → `is_sufficiently_secure: true`). No hizo falta la contraseña de `elastic`.
+- **La regla de alerta no tiene acciones:** la constancia queda en el panel de alertas (spec, punto 7). Se crea por API (`README.md`), porque las reglas no se exportan junto con los objetos.
+- **"% de 5xx"** se muestra como barras apiladas al 100 % (5xx contra el resto) por minuto: es el porcentaje en el tiempo, sin fórmulas de Lens.
+- **`LoggingAspect`:** las excepciones se loguean en DEBUG y solo con su tipo; el detalle de un error inesperado va en `ERROR_INESPERADO`. Se actualizó su test generado (`LoggingAspectTest`).
+
 ## 6. Decisiones pendientes
-1. **Login con forma de email en `LOGIN_FALLIDO`.** La spec pide "login intentado", pero se puede entrar con el email, y el email es dato sensible (regla 3). Propuesta: si el login intentado contiene `@`, se registra enmascarado (`a***@***`). ¿Va así?
-2. **Versión de ELK:** 9.5.5. Si las reglas de alerta exigen seguridad activada en esa versión, lo anoto acá antes de seguir (la guía lo prevé).
+Ninguna.
 
 ## 7. Riesgos
 - Los tests de Spring Boot 4 pueden apagar el tracing por defecto: CA04 puede necesitar la anotación de `spring-boot-micrometer-tracing-test` (sería una dependencia más de test, que justifico acá si hace falta).
