@@ -57,12 +57,10 @@ test.describe('003 PWA y carga sin conexión', () => {
     expect(iconos.map(i => i.sizes)).toEqual(expect.arrayContaining(['192x192', '512x512']));
     expect(iconos.some(i => (i.purpose ?? '').includes('maskable'))).toBe(true);
 
-    const sw = await page.evaluate(async () => {
-      const registro = await navigator.serviceWorker.ready;
-      return { scope: registro.scope, estado: registro.active?.state };
-    });
-    expect(new URL(sw.scope).pathname).toBe('/');
-    expect(sw.estado).toBe('activated');
+    const scope = await page.evaluate(async () => (await navigator.serviceWorker.ready).scope);
+    expect(new URL(scope).pathname).toBe('/');
+    // `ready` resuelve con el SW en "activating" o "activated": se espera a que termine de activarse.
+    await expect.poll(() => page.evaluate(async () => (await navigator.serviceWorker.ready).active?.state)).toBe('activated');
   });
 
   test('003-CA02 abre sin conexión: después de abrirla con red, recarga sin red y la interfaz carga', async ({ page, context, jhi }) => {
@@ -268,6 +266,8 @@ test.describe('003 PWA y carga sin conexión', () => {
     await jhi.navbar.clickOnLogoutItem();
     await expect(page.getByText('Tenés 1 gasto sin sincronizar. Si cerrás sesión se va a perder.')).toBeVisible();
     await page.getByRole('button', { name: 'Cerrar sesión igual' }).click();
+    // El logout termina recargando la página en "/": se espera a que cargue antes de inspeccionar el navegador.
+    await page.waitForURL(url => url.pathname === '/');
 
     await expect.poll(() => respuestasEnCache(page)).toBe(0);
     await expect.poll(() => contarPendientes(page)).toBe(0);

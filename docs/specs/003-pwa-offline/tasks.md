@@ -39,3 +39,28 @@ npx playwright test --project=chromium e2e/negocio/003-pwa-offline.pw.ts --outpu
 | 003-CA11 | — (pasa) | Esperado: depende del layout de la 001/002, no de la PWA. Queda como test de regresión |
 
 Todos fallan por la ausencia de la PWA (motivo de la spec), no por errores de los tests: no hizo falta corregir ninguno.
+
+## Fase verde (agente pwa, 2026-11-20)
+
+| # | Tarea | Criterios | Estado |
+|---|---|---|---|
+| T4 | `pwa.config.ts` de a un bloque: manifest y precache aprobados por el humano; `runtimeCaching` y base offline, con su OK para terminar sin preguntar | CA01, CA02, CA03 | hecho |
+| T5 | Pendientes en IndexedDB (`idb`), sincronización con axios propio (un 401 no pasa por el interceptor de logout), detección de conexión | CA04 a CA08 | hecho |
+| T6 | "Mis gastos" y "Resumen" sin conexión: aviso, "no disponible", pendientes y rechazados, Editar/Borrar deshabilitados | CA03 a CA06 | hecho |
+| T7 | Cierre de sesión con aviso y limpieza; caché borrada cuando entra otro usuario | CA09, CA10 | hecho |
+| T8 | Tests unitarios propios: `pwa.config.spec.ts`, `pendientes.repositorio.spec.ts`, `sincronizacion.spec.ts` (15 tests) | CA01 a CA10 | hecho |
+| T9 | `ci:frontend:test`, `ci:backend:test` y la suite E2E completa contra el jar de prod | todos | ver abajo |
+
+### Tests de la fase roja corregidos (el agente testing estaba apagado)
+| Test | Problema | Corrección |
+|---|---|---|
+| 003-CA01 | `navigator.serviceWorker.ready` resuelve con el SW en `activating`; leer `state` una sola vez era una carrera | `expect.poll` hasta `activated` |
+| 003-CA09 (aviso de 1 pendiente) | Después de "Cerrar sesión igual" el logout recarga la página en `/`; el `evaluate` de IndexedDB se cortaba por la navegación | `page.waitForURL` a `/` antes de inspeccionar |
+
+### Evidencia de la fase verde
+```
+npm run ci:frontend:test        → Test Files 24 passed, Tests 202 passed
+npx playwright test --project=chromium --retries=0   (jar e2e de prod, suite completa)
+  1 skipped      ← administration.pw.ts, ya estaba omitido
+  73 passed (1.5m)
+```

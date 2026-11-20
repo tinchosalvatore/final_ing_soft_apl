@@ -1,7 +1,7 @@
 # Plan — Spec 003 (PWA y carga sin conexión)
 
 - Autor: agente pwa (sesión `pwa`, 2026-11-20)
-- Estado: Borrador (lo aprueba el documentador; los bloques de `pwa.config.ts` los aprueba el humano uno por uno)
+- Estado: Implementado (2026-11-20). El documentador pidió seguir sin esperar su OK (modo ahorro); el humano aprobó los bloques 1 (manifest) y 2 (precache) de `pwa.config.ts` y después pidió terminar el resto sin preguntar
 
 <!-- Lo escribe el implementador ANTES de codear. No se codea hasta que se apruebe. -->
 
@@ -21,21 +21,21 @@ El cierre de sesión pasa por un componente propio que avisa si hay pendientes, 
 | `app/pwa/offline-db.config.ts` (nuevo) | Desarrollador | Nombre, versión, store `pendientes` (`keyPath` autoincremental) e índice `login` |
 | `app/shared/offline/pendientes.repositorio.ts` (nuevo) | Desarrollador | CRUD de pendientes con `idb`, siempre filtrando por `login` |
 | `app/shared/offline/sincronizacion.ts` (nuevo) | Desarrollador | Envío en orden; mapeo de respuestas (ver §3); exclusión mutua para no enviar dos veces |
-| `app/shared/offline/conexion.ts` + `use-conexion.ts` (nuevos) | Desarrollador | Estado "sin conexión" (ver §5, decisión D2) |
+| `app/shared/offline/conexion.ts` (nuevo, incluye el hook `useEnLinea`) | Desarrollador | Estado "sin conexión" (ver §5, decisión D2) |
 | `app/shared/offline/limpieza.ts` (nuevo) | Desarrollador | `caches.delete('api-v1')` + borrar pendientes |
 | `app/shared/offline/cerrar-sesion.tsx` (nuevo) | Desarrollador | Aviso singular/plural con "Cerrar sesión igual" / "Cancelar"; al confirmar limpia y renderiza el `Logout` generado |
-| `app/shared/offline/indicador-pendientes.tsx`, `aviso-sin-conexion.tsx`, `textos.ts` (nuevos) | Desarrollador | Textos de la spec §5.1 en un solo lugar (como ADR-0008) |
-| `content/images/pwa/icono.svg` + `icono-192.png`, `icono-512.png`, `icono-maskable-512.png` (nuevos) | Desarrollador | Ícono propio; los PNG se generan una vez con ImageMagick y se commitean |
+| `app/shared/offline/indicador-pendientes.tsx`, `use-pendientes.ts`, `eventos.ts`, `sincronizacion-offline.tsx`, `textos.ts` (nuevos) | Desarrollador | Textos de la spec §5.1 en un solo lugar (como ADR-0008) |
+| `content/images/pwa/icono.svg`, `icono-maskable.svg` + `icono-192.png`, `icono-512.png`, `icono-maskable-512.png` (nuevos) | Desarrollador | Ícono propio; los PNG se generan una vez con ImageMagick y se commitean. `vite.config.ts` los copia a la **raíz** del build (`/icono-*.png`), que Spring sirve sin sesión (`/content/**` pide sesión) |
 | `app/modules/gastos/mis-gastos.tsx`, `gasto-form.tsx`, `gastos.api.ts`, `index.tsx` | Desarrollador (spec 001) | Listado: pendientes arriba con su marca, rechazados con "Reintentar"/"Descartar", Editar/Borrar deshabilitados sin conexión, aviso de datos guardados / "no disponible". Formulario: si el POST falla por red → pendiente; modo "Corregir gasto pendiente" (ruta `/mis-gastos/pendiente/:clave/corregir`). Las validaciones siguen siendo `validarGasto` (punto 7, sin duplicar reglas) |
 | `app/modules/resumen/resumen.tsx` | Desarrollador (spec 002) | Aviso de datos guardados / "no disponible" |
 | `app/routes.tsx` | Compartido (ADR-0008) | La ruta `logout` usa `CerrarSesion`; ruta de corrección de pendiente |
 | `app/shared/layout/header/header.tsx` | Compartido (ADR-0008) | Indicador "N pendientes" |
 | `app/app.tsx` | Generador | Arranque de la sincronización (`online` + sesión iniciada). Va a la tabla de ADR-0008 (`n` y reaplicar) |
-| `vite.config.ts` | Compartido | `VitePWA(pwaConfig)`, deshabilitado fuera de prod (ver D5). Debajo de nada, sin tocar el needle |
+| `vite.config.ts` | Compartido | `VitePWA({ ...pwaConfig, disable: development })` (D5) y la copia de los íconos. Sin tocar el needle |
 | `index.html` | Compartido | Saca `<link rel="manifest" href="/manifest.webapp">` (lo inyecta el plugin), título "Tracker de Gastos", `theme-color` |
 | `manifest.webapp` | Generador | Se borra (lo reemplaza `/manifest.webmanifest`). Tabla de ADR-0008 |
 | `config/SecurityConfiguration.java` | Generador | `/*.webmanifest` en `permitAll` (hoy devolvería 401). Tabla de ADR-0008 |
-| `config/WebConfigurer.java` | Generador | Solo si Tomcat no sirve `.webmanifest` como `application/manifest+json`: se agrega el mime. Se verifica al implementar |
+| `config/application.yml` | Compartido | `server.mime-mappings.webmanifest: application/manifest+json` (Tomcat lo servía como `application/octet-stream`) |
 | `package.json` | Compartido | Dependencias (§4); `webapp:build:dev` con `--mode development` (D5) |
 | Tests Vitest propios (`*.spec.ts` en `app/shared/offline/` y `app/pwa/`) | Desarrollador | Repositorio con `fake-indexeddb`, sincronización con axios mockeado, config de Workbox (estrategias y nombres) |
 | `docs/specs/003-pwa-offline/tasks.md`, `docs/adr/ADR-0008...md` | Docs | Tareas y tabla de archivos generados modificados |
@@ -76,11 +76,14 @@ El cierre de sesión pasa por un componente propio que avisa si hay pendientes, 
 - **D5. SW solo en prod**: hoy `webapp:build:dev` y `webapp:build:prod` son el mismo `vite build`. `webapp:build:dev` pasa a `vite build --mode development` y el plugin queda `disable` fuera de `production`. `npm start` no registra SW (default del plugin).
 - **D6. Ícono propio** (SVG simple, generado con ImageMagick), no los de JHipster.
 
+- **D7. Sincronización ligada al dueño del token**: antes de enviar se compara el `sub` del JWT con el `login` de los pendientes; si es de otro usuario no se envía nada (hallazgo de la revisión de seguridad automática). Un token ilegible se deja pasar: el backend responde 401 y el pendiente queda (punto 12).
+
 ## 6. Decisiones pendientes (para el documentador / humano)
 
-1. **D1 y D2** de arriba: ¿se aceptan?
-2. **Logout con pendientes de otro usuario.** El punto 14 dice "se borran todos los datos guardados y los pendientes". Si `ana` tenía pendientes (sesión vencida) y `beto` entra y cierra sesión, ¿se borran también los de `ana` (sin que nadie los haya visto en el aviso) o solo los de `beto`? Propongo: borrar solo los del usuario que cierra (el aviso cuenta esos), y la caché `api-v1` completa. CA09 se cumple igual.
-3. **Respuestas que no son 400 ni 401** al sincronizar (403, 404, 5xx): propongo dejarlas pendientes y reintentar después (la guía solo nombra 400, 401 y error de red).
+Resueltas por el agente al implementar (el humano pidió terminar sin preguntar); el documentador puede revisarlas:
+1. **D1 y D2** se implementaron como se proponen arriba. D1 está explicada en el comentario de la entrada de `/api/account` en `pwa.config.ts`.
+2. **Logout con pendientes de otro usuario.** Se borran solo los pendientes del usuario que cierra sesión (los que cuenta el aviso) y la caché `api-v1` completa. Los de otro usuario cuya sesión venció siguen esperando su login (punto 12) y nunca se le muestran a nadie más (punto 15). CA09 se cumple igual. Si la spec quiere borrar "todos" literalmente, es cambiar `borrarPendientesDe(login)` por un `clear()` del store.
+3. **Respuestas que no son 400 ni 401** al sincronizar (403, 404, 5xx): quedan pendientes y se reintentan después.
 
 ## 7. Riesgos
 

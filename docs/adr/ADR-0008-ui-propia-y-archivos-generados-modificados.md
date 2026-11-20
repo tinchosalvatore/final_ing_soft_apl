@@ -23,6 +23,10 @@
 | `repository/CategoriaRepository.java` | `existeNombreNormalizado` (JPQL `lower(trim(...))`) | `i` (ignorar siempre) |
 | `GastoResourceIT.java`, `CategoriaResourceIT.java` | Ajustados a las reglas de la 001 (ver `docs/specs/001-gastos/tasks.md`) | `i` |
 | `web/rest/errors/ExceptionTranslator.java`, `service/UserService.java`, `config/ApplicationProperties.java` | Traducción de las excepciones de negocio, registro deshabilitado (regla 16), propiedad `application.registro.habilitado` | `n` y reaplicar |
+| `app/app.tsx` (spec 003) | `<SincronizacionOffline />`: sincroniza los pendientes al abrir y al volver la red | `n` y reaplicar |
+| `app/routes.tsx` y `header.tsx` (spec 003) | Ruta `logout` → `CerrarSesion` (aviso de pendientes y limpieza); indicador de pendientes junto a la marca | `n` y reaplicar |
+| `config/SecurityConfiguration.java` (spec 003) | `/*.webmanifest` en `permitAll` (manifest de la PWA) | `n` y reaplicar |
+| `src/main/webapp/manifest.webapp` (spec 003) | Borrado: lo reemplaza `/manifest.webmanifest`, que genera `vite-plugin-pwa` desde `app/pwa/pwa.config.ts` | `n` (no recrearlo) |
 
   Los archivos de ADR-0007 (`GastoService`, `GastoQueryService`, `GastoResource`, `CategoriaService`, `CategoriaResource`) siguen esa misma regla: `n` o `i`.
 - **El "omitir al regenerar" se hace con `.yo-resolve`** (en la raíz; agregado en `fix/001-patch`). Yeoman lee una línea `<ruta> skip` por archivo y lo omite sin preguntar. **Solo se usa para territorio del desarrollador**, es decir, archivos que generó JHipster y que reescribimos: los cinco del ADR-0007, `CategoriaRepository.java`, `GastoResourceIT.java`, `CategoriaResourceIT.java`, `header.spec.tsx`, `e2e/entity/gasto.pw.ts` y `e2e/entity/categoria.pw.ts`.
