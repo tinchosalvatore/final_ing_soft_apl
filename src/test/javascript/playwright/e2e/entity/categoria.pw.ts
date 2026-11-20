@@ -23,7 +23,9 @@ test.describe('Categoria e2e test', () => {
   let categoria;
 
   test.beforeEach(async ({ jhi }) => {
-    const { username, password } = jhi.credentials();
+    // Ajuste del coder (spec 001, ADR-0008 y S10): el CRUD generado y el menú "Entidades" son solo para ADMIN.
+    // El flujo de un USER ("Mis gastos") lo cubre e2e/negocio/001-gastos.pw.ts (001-CA15).
+    const { adminUsername: username, adminPassword: password } = jhi.credentials();
     await jhi.login(username, password);
   });
 
