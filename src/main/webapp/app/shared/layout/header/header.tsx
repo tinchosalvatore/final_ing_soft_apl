@@ -9,7 +9,7 @@ import LoadingBar, { LoadingBarRef } from 'react-top-loading-bar';
 import { useAppDispatch, useAppSelector } from 'app/config/store';
 import { setLocale } from 'app/shared/reducers/locale';
 import { AccountMenu, AdminMenu, EntitiesMenu, LocaleMenu } from '../menus';
-import { MenuCategorias, MenuMisGastos } from 'app/modules/gastos/menu-gastos';
+import { MenuCategorias, MenuMisGastos, MenuResumen } from 'app/modules/gastos/menu-gastos';
 
 import { Brand, Home } from './header-components';
 
@@ -64,6 +64,7 @@ const Header = (props: IHeaderProps) => {
             <Home />
             {/* Spec 001, regla 14 (ADR-0008): "Mis gastos" para todos; "Categorías" y el menú generado de entidades, solo ADMIN */}
             {props.isAuthenticated && <MenuMisGastos />}
+            {props.isAuthenticated && <MenuResumen />}
             {props.isAuthenticated && props.isAdmin && <MenuCategorias />}
             {props.isAuthenticated && props.isAdmin && <EntitiesMenu />}
             {props.isAuthenticated && props.isAdmin && <AdminMenu showOpenAPI={props.isOpenAPIEnabled} />}
