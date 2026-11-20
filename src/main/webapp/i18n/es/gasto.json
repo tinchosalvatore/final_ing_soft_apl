@@ -1,0 +1,28 @@
+{
+  "trackerGastosApp": {
+    "gasto": {
+      "home": {
+        "title": "Gastos",
+        "refreshListLabel": "Refrescar lista",
+        "createLabel": "Crear nuevo Gasto",
+        "createOrEditLabel": "Crear o editar Gasto",
+        "notFound": "Ningún Gastos encontrado"
+      },
+      "created": "Un nuevo Gasto ha sido creado con el identificador {{ param }}",
+      "updated": "Un Gasto ha sido actualizado con el identificador {{ param }}",
+      "deleted": "Un Gasto ha sido eliminado con el identificador {{ param }}",
+      "delete": {
+        "question": "¿Seguro que quiere eliminar Gasto {{ id }}?"
+      },
+      "detail": {
+        "title": "Gasto"
+      },
+      "id": "ID",
+      "monto": "Monto",
+      "fecha": "Fecha",
+      "descripcion": "Descripcion",
+      "categoria": "Categoria",
+      "user": "User"
+    }
+  }
+}

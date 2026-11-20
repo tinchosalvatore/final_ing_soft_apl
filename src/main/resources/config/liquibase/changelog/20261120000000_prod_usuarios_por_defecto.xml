@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+        S5 (docs/catedra/seguridad.md): sin contraseñas por defecto en prod.
+        Corre una sola vez por base y solo en prod real (no con el perfil secret-samples de CI/E2E).
+        - Desactiva el usuario 'user' que carga JHipster desde data/user.csv.
+        - Reemplaza el hash de 'admin' por el de la variable TRACKER_ADMIN_PASSWORD_HASH
+          (spring.liquibase.parameters.adminPasswordHash en application-prod.yml).
+        Cambiar la variable después del primer arranque no tiene efecto: la contraseña se rota desde la UI.
+    -->
+    <changeSet id="20261120000000-1" author="coder" context="prod and !secret-samples">
+        <!--
+            Falla rápido: Spring pasa los parámetros de Liquibase sin resolver si falta la variable
+            (queda el texto literal del placeholder). Si el valor no tiene forma de hash BCrypt
+            ($2a$, $2b$ o $2y$ y 60 caracteres), la migración se corta y la app no arranca.
+        -->
+        <preConditions onFail="HALT" onFailMessage="TRACKER_ADMIN_PASSWORD_HASH falta o no es un hash BCrypt (ver .env.example)">
+            <sqlCheck expectedResult="1">
+                SELECT CASE WHEN '${adminPasswordHash}' ~ '^\$2[aby]\$[0-9]{2}\$[./A-Za-z0-9]{53}$' THEN 1 ELSE 0 END
+            </sqlCheck>
+        </preConditions>
+        <update tableName="jhi_user">
+            <column name="activated" valueBoolean="false"/>
+            <where>login = 'user'</where>
+        </update>
+        <update tableName="jhi_user">
+            <column name="password_hash" value="${adminPasswordHash}"/>
+            <where>login = 'admin'</where>
+        </update>
+    </changeSet>
+</databaseChangeLog>

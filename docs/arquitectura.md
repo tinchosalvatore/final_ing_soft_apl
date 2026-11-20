@@ -8,7 +8,7 @@ Decisiones: ADR-0001 a ADR-0007. Este documento muestra **cómo encajan las piez
 flowchart LR
   subgraph Dispositivo["Dispositivo del usuario (navegador / PWA instalada)"]
     UI["App React<br/>(SPA)"]
-    SW["Service Worker<br/>Workbox"]
+    SW["Service Worker<br/>generado por Workbox<br/>(pwa.config.ts)"]
     CS[("Cache Storage<br/>app shell + api-v1")]
     IDB[("IndexedDB<br/>gastos pendientes")]
     UI <--> SW

@@ -25,12 +25,20 @@ Responsable: el implementador de cada spec (es transversal), y el verificador lo
 | Variable | Para qué | Dónde se define |
 |---|---|---|
 | `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` | Conexión a Postgres | `.env` / `app.yml` |
-| `JHIPSTER_SECURITY_AUTHENTICATION_JWT_BASE64_SECRET` | Firma de los JWT. **Distinto por entorno**; en prod nunca se usa el valor generado que trae el yml | `.env` |
+| `JHIPSTER_SECURITY_AUTHENTICATION_JWT_BASE64_SECRET` | Firma de los JWT. **Distinto por entorno**; en prod real nunca se usa el valor de muestra de `application-secret-samples.yml` | `.env` |
+| `TRACKER_ADMIN_PASSWORD_HASH` | Hash BCrypt de la contraseña de `admin` en prod (S5). Es un hash, no la contraseña en claro | `.env` |
 | `JHIPSTER_LOGGING_LOGSTASH_ENABLED`, `JHIPSTER_LOGGING_LOGSTASH_HOST`, `JHIPSTER_LOGGING_LOGSTASH_PORT` | Envío de logs | `.env` / `app.yml` |
 | `SERVER_PORT` | Puerto HTTP | opcional |
 | `SPRING_PROFILES_ACTIVE` | `prod` / `dev` | `app.yml` |
 
 El agente que agregue una variable la suma a esta tabla y a `.env.example` en el mismo commit.
+
+### Perfiles: "prod real" vs `secret-samples`
+JHipster 9.4 separa los secretos de ejemplo en el perfil **`secret-samples`** (`application-secret-samples.yml`: secreto JWT de muestra, `admin/admin` y `user/user` activos). Lo activan `src/main/docker/app.yml` (`prod,api-docs,secret-samples`) y el script de E2E del CI (`e2e,secret-samples,prod`).
+- **Prod real** = `SPRING_PROFILES_ACTIVE=prod` **sin** `secret-samples`, con todos los secretos por variables de entorno. Si falta alguno, la app no arranca (falla rápido).
+- **`secret-samples`** = solo para el CI/E2E y el compose local de demo. Nunca para un despliegue real.
+
+En un `.env` de docker compose, los `$` del hash BCrypt se escriben `$$` (o el valor va entre comillas simples) para que compose no los interprete como variables.
 
 ## 3. Qué queda afuera y por qué
 | Factor | Motivo |

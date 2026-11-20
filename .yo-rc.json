@@ -1,0 +1,25 @@
+{
+  "generator-jhipster": {
+    "applicationType": "monolith",
+    "authenticationType": "jwt",
+    "baseName": "trackerGastos",
+    "buildTool": "maven",
+    "cacheProvider": "no",
+    "clientFramework": "react",
+    "creationTimestamp": 1702381778324,
+    "databaseType": "sql",
+    "devDatabaseType": "postgresql",
+    "enableHibernateCache": false,
+    "enableTranslation": true,
+    "entities": ["Categoria", "Gasto"],
+    "jhipsterVersion": "9.4.0",
+    "jwtSecretKey": "MDAyMDczZjRlZmZjYzY2YTU0YzM1NDNmNzQ3NjViOWE5MmNmOGNmYjQwOGIyZTI4NzU5MjZmMTVjNzcxYzk5NjlhYmFmODFmNWQ4YWQyZWMzNTY5YWYxMTMwOWQzMDFjZGYyMTlhODBlMjE0MGQ3OTY0MWM1NzhjMDgzMmVmNGM=",
+    "languages": ["es"],
+    "lastLiquibaseTimestamp": 1702381898000,
+    "nativeLanguage": "es",
+    "packageName": "com.trackergastos",
+    "prodDatabaseType": "postgresql",
+    "serverPort": "8080",
+    "testFrameworks": ["playwright"]
+  }
+}

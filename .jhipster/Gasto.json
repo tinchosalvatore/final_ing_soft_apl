@@ -1,0 +1,49 @@
+{
+  "annotations": {
+    "changelogDate": "20231212115138"
+  },
+  "applications": ["trackerGastos"],
+  "documentation": "Un gasto de un usuario. El dueño lo asigna el backend a partir del usuario autenticado (spec 001).\\nReglas de negocio que NO expresa el JDL (monto > 0, fecha no futura, propiedad): spec 001.",
+  "dto": "mapstruct",
+  "fields": [
+    {
+      "fieldName": "monto",
+      "fieldType": "BigDecimal",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "fecha",
+      "fieldType": "LocalDate",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "descripcion",
+      "fieldType": "String",
+      "fieldValidateRules": ["maxlength"],
+      "fieldValidateRulesMaxlength": "140"
+    }
+  ],
+  "jpaMetamodelFiltering": true,
+  "name": "Gasto",
+  "pagination": "pagination",
+  "relationships": [
+    {
+      "otherEntityField": "nombre",
+      "otherEntityName": "categoria",
+      "relationshipName": "categoria",
+      "relationshipSide": "left",
+      "relationshipType": "many-to-one",
+      "relationshipValidateRules": "required"
+    },
+    {
+      "otherEntityField": "login",
+      "otherEntityName": "user",
+      "relationshipName": "user",
+      "relationshipSide": "left",
+      "relationshipType": "many-to-one",
+      "relationshipWithBuiltInEntity": true
+    }
+  ],
+  "searchEngine": "no",
+  "service": "serviceClass"
+}

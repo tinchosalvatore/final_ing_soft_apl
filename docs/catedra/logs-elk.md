@@ -1,6 +1,6 @@
 # Guía: logs y ELK
 
-Responsable: implementador de la spec 004. Objetivo: **lo más simple que cumpla la spec**. Si algo no está en esta guía ni en la spec, no se agrega.
+Responsable: agente **observabilidad** (spec 004). Objetivo: **lo más simple que cumpla la spec**. Si algo no está en esta guía ni en la spec, no se agrega.
 
 ## 1. Qué se aplica
 

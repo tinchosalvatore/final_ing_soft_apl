@@ -1,6 +1,6 @@
 # Guía: testing (unitarios, integración, arquitectura y E2E con Playwright)
 
-Responsable: **tester** (escribe los tests de los criterios) y **verificador** (controla que representen la spec). El implementador no modifica los tests del tester.
+Responsable: agente **testing** (escribe los tests de los criterios) y agente **seguridad** como verificador (controla que representen la spec). El agente que implementa no modifica los tests del agente testing.
 
 ## 1. Qué se aplica
 
