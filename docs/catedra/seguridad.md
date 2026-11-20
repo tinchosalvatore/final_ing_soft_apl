@@ -65,6 +65,7 @@ Lo que ya trae JHipster y **no hay que romper**: contraseñas con **BCrypt** (A0
 | L2 | `LOGIN_FALLIDO` registra el login tal como se escribió: si alguien escribe la contraseña en el campo de usuario, va a los logs | Enmascararlo impediría investigar ataques. Los emails ya se enmascaran |
 | L3 | El stack de `ERROR_INESPERADO` puede incluir valores de mensajes del driver (por ejemplo `Key (email)=…`) | Solo en el log, nunca en la respuesta. Es un entorno de demo |
 | L4 | ELK sin seguridad (sin usuarios ni TLS) | Entorno local o de demo (spec 004, fuera de alcance) |
+| L5 | Con el registro habilitado (solo dev o demo), registrarse con el login de un usuario desactivado que tiene gastos responde 500 por la FK | En prod no hay registro público (001-CA16). Es código generado por JHipster (`removeNonActivatedUser`) |
 
 ## 5. Qué queda afuera
 - OWASP Top 10 para aplicaciones con LLM (la app no usa LLMs).
