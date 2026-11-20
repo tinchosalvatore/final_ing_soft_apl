@@ -200,8 +200,8 @@ Plan: `plan-fix.md` (aprobado por el documentador).
 
 ### Evidencia (2026-11-20)
 - Tests de testing: `GastoPatchIT` 10/10 y `UsuarioConGastosIT` 2/2. Antes fallaban `descripcionLargaPorPatch` y `ca17BorrarUsuarioConGastos`.
-- `npm run ci:backend:test`: javadoc, checkstyle, 58 unit y 218 IT, todos en verde.
-- `npm run ci:frontend:test`: build prod y 181 Vitest, en verde. Ningún archivo propio ignorado por `.gitignore`.
+- `npm run ci:backend:test`: javadoc, checkstyle, 58 unit y 218 IT, todos en verde. Después de integrar `main` (con la 002): 79 unit y 228 IT.
+- `npm run ci:frontend:test`: build prod y 181 Vitest (187 con la 002), en verde. Ningún archivo propio ignorado por `.gitignore`.
 - `.yo-resolve`: las 11 rutas existen. El formato se verificó contra `@yeoman/conflicter`: `<glob> [estado]`, con `skip` por defecto.
 
 ## Notas para la próxima sesión
