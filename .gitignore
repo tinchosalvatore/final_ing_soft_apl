@@ -121,7 +121,9 @@ Desktop.ini
 ######################
 # Logs
 ######################
-*.log*
+# O2 del verify del 000: '*.log*' ignoraba archivos como gastos.logica.ts
+*.log
+*.log.*
 
 ######################
 # Others
