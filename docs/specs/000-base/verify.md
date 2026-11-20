@@ -61,6 +61,7 @@ Son propuestas para las specs y el plan. **No corregí nada**: lo que haya que c
 
   Cualquiera de las tres necesita la aprobación del humano y una prueba de reinicio con otro hash en `tasks.md`.
 
+- **Decisión del humano (2026-11-20, PR #2):** `runOnChange="true"`. Cuando el coder abra su PR, se re-verifica con tres casos: reiniciar con otro hash arranca y aplica el hash nuevo; reiniciar con el mismo hash no cambia nada; sin la variable no arranca.
 - **Derivación (2026-11-20):** riesgo R2 en `seguridad.md` §4.1. Lo decide el humano. El documentador recomienda `runOnChange="true"`, que convierte a la variable en la fuente de verdad y lo implementa el coder en un PR chico. Si se adopta, hay que verificar que reiniciar con otro hash arranque y aplique el hash nuevo, y tener en cuenta que el hash de la variable pisa cualquier contraseña de `admin` cambiada desde la UI.
 
 ### O2 (baja): un registro anónimo borra al `user` desactivado y toma su login
@@ -75,6 +76,7 @@ Son propuestas para las specs y el plan. **No corregí nada**: lo que haya que c
 - **Cómo se generaliza:** pasa con **cualquier** cuenta que un admin desactive, no solo con `user`. Un anónimo puede borrarla y quedarse con su login. Si esa cuenta tiene gastos, el resultado depende de la FK de `gasto`, y eso no lo cubre ninguna spec.
 - **Propuesta:** que el documentador decida si va como caso borde de la spec 001 (cuentas y dueño de los gastos) o como un punto nuevo de `seguridad.md` (por ejemplo, desactivar no es lo mismo que "registro pendiente"). Para el 000 alcanza con dejarlo asentado.
 
+- **Decisión del humano (2026-11-20, PR #2):** en prod no hay registro público. Es la regla 16 y el criterio 001-CA16 de la spec 001: rechazo con 401 y ningún usuario creado, modificado ni borrado. Se verifica en el `verify.md` de la 001.
 - **Derivación (2026-11-20):** riesgo R1 en `seguridad.md` §4.1. Lo decide el humano. El documentador propone desactivar el auto-registro en prod (los usuarios los crea el ADMIN). Si se decide, entra en la spec 001.
 
 ### O3 (ya conocido, 004-CA11): el login de un usuario desactivado responde 500, **con cualquier contraseña**
