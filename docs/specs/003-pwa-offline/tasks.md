@@ -49,7 +49,7 @@ Todos fallan por la ausencia de la PWA (motivo de la spec), no por errores de lo
 | T6 | "Mis gastos" y "Resumen" sin conexión: aviso, "no disponible", pendientes y rechazados, Editar/Borrar deshabilitados | CA03 a CA06 | hecho |
 | T7 | Cierre de sesión con aviso y limpieza; caché borrada cuando entra otro usuario | CA09, CA10 | hecho |
 | T8 | Tests unitarios propios: `pwa.config.spec.ts`, `pendientes.repositorio.spec.ts`, `sincronizacion.spec.ts` (15 tests) | CA01 a CA10 | hecho |
-| T9 | `ci:frontend:test`, `ci:backend:test` y la suite E2E completa contra el jar de prod | todos | ver abajo |
+| T9 | `ci:frontend:test`, `ci:backend:test` y la suite E2E completa contra el jar de prod | todos | hecho (ver abajo) |
 
 ### Tests de la fase roja corregidos (el agente testing estaba apagado)
 | Test | Problema | Corrección |
@@ -60,6 +60,7 @@ Todos fallan por la ausencia de la PWA (motivo de la spec), no por errores de lo
 ### Evidencia de la fase verde
 ```
 npm run ci:frontend:test        → Test Files 24 passed, Tests 202 passed
+npm run ci:backend:test         → Tests run: 241, Failures: 0, Errors: 0 — BUILD SUCCESS
 npx playwright test --project=chromium --retries=0   (jar e2e de prod, suite completa)
   1 skipped      ← administration.pw.ts, ya estaba omitido
   73 passed (1.5m)
