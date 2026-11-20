@@ -19,7 +19,7 @@ No hace falta ninguna clase nueva: los tests usan la API que ya existe (`/api/ga
 
 - **Categorías iniciales en todos los contextos de Liquibase**, también en `test` (001-CA14 consulta la base de los tests sin crear datos).
 - `fieldErrors[].field` = `monto` / `fecha` también cuando la regla se valida en el service (CA02, CA03), al crear y al editar.
-- El `POST` y el `PUT` responden con el gasto que incluye `user.login` (CA01 afirma `$.user.login == "ana"`).
+- `user.login` en la respuesta de crear o editar y `/count` restringido al dueño: ya están en la spec §5.1.
 - El filtro `userId.equals` / `userId.in` y el conteo (`/api/gastos/count`) también quedan restringidos al dueño (CA06).
 - **Tests generados que van a romperse**: `GastoResourceIT` y `CategoriaResourceIT` de JHipster asumen el CRUD abierto (crean gastos sin dueño, borran categorías como USER, esperan 400 `idnotfound`). Son del generador, no del agente testing: los ajusta el coder al implementar la 001 y lo deja anotado.
 
@@ -78,7 +78,7 @@ Cada falla se revisó y es por la razón esperada, por ejemplo:
 - CA13: `expected:<400> but was:<204>`.
 - CA14: faltan las categorías en la base.
 
-**Los 8 que pasan sin la lógica**, a propósito: son controles o bordes que el código generado ya cumple y que la implementación no tiene que romper:
+**Los 8 que pasan sin la lógica**, a propósito (aprobado por el documentador): son controles o bordes que el código generado ya cumple y que la implementación no tiene que romper. **Para el verificador: no son tests mal escritos, son tests de regresión.**
 - `001-CA10 sin sesión`: lo da la seguridad generada para `/api/**`.
 - `001-CA07 control`: ana ve su propio gasto.
 - `001-CA11 USER sí puede listar`.
