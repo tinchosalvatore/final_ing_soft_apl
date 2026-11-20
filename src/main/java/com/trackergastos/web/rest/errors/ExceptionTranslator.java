@@ -1,5 +1,6 @@
 package com.trackergastos.web.rest.errors;
 
+import static net.logstash.logback.argument.StructuredArguments.kv;
 import static org.springframework.core.annotation.AnnotatedElementUtils.findMergedAnnotation;
 
 import com.trackergastos.service.CampoInvalidoException;
@@ -7,7 +8,6 @@ import com.trackergastos.service.ReglaDeNegocioException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import java.net.URI;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -36,7 +36,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
-import tech.jhipster.config.JHipsterConstants;
 import tech.jhipster.web.rest.errors.ProblemDetailWithCause;
 import tech.jhipster.web.rest.errors.ProblemDetailWithCause.ProblemDetailWithCauseBuilder;
 import tech.jhipster.web.util.HeaderUtil;
@@ -54,6 +53,9 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     private static final boolean CAUSAL_CHAIN_ENABLED = false;
 
     private static final Logger LOG = LoggerFactory.getLogger(ExceptionTranslator.class);
+
+    static final String DETALLE_ERROR_INESPERADO = "Unexpected error";
+    static final String DETALLE_GENERICO = "Invalid request";
 
     @Value("${jhipster.clientApp.name:trackerGastos}")
     private String applicationName;
@@ -82,7 +84,22 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
         WebRequest request
     ) {
         body = body == null ? wrapAndCustomizeProblem(ex, (NativeWebRequest) request) : body;
+        registrarEvento(ex, statusCode, (NativeWebRequest) request);
         return super.handleExceptionInternal(ex, body, headers, statusCode, request);
+    }
+
+    /**
+     * Spec 004: el detalle técnico de un error inesperado va solo al log ({@code ERROR_INESPERADO}, con el stack); el
+     * rechazo de un {@code @PreAuthorize} se registra como {@code ACCESO_DENEGADO}.
+     */
+    private void registrarEvento(Throwable ex, HttpStatusCode statusCode, NativeWebRequest request) {
+        if (statusCode.is5xxServerError()) {
+            LOG.error("Error inesperado", kv("evento", "ERROR_INESPERADO"), kv("tipoError", ex.getClass().getName()), ex);
+        } else if (ex instanceof AccessDeniedException) {
+            HttpServletRequest nativeRequest = request != null ? request.getNativeRequest(HttpServletRequest.class) : null;
+            String operacion = nativeRequest != null ? nativeRequest.getMethod() + " " + nativeRequest.getRequestURI() : null;
+            LOG.warn("Acceso denegado", kv("evento", "ACCESO_DENEGADO"), kv("operacion", operacion));
+        }
     }
 
     protected ProblemDetailWithCause wrapAndCustomizeProblem(Throwable ex, NativeWebRequest request) {
@@ -228,14 +245,28 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
         return null;
     }
 
+    /**
+     * Spec 004 (§5.1, CA05): en <b>todos</b> los perfiles, ningún detalle expone clases, paquetes ni SQL. Los 5xx llevan
+     * un mensaje genérico; el detalle técnico queda en el log ({@link #registrarEvento}).
+     */
     private String getCustomizedErrorDetails(Throwable err) {
-        Collection<String> activeProfiles = List.of(env.getActiveProfiles());
-        if (activeProfiles.contains(JHipsterConstants.SPRING_PROFILE_PRODUCTION)) {
-            if (err instanceof HttpMessageConversionException) return "Unable to convert http message";
-            if (err instanceof DataAccessException) return "Failure during data access";
-            if (containsPackageName(err.getMessage())) return "Unexpected runtime exception";
-        }
-        return err.getCause() != null ? err.getCause().getMessage() : err.getMessage();
+        if (toStatus(err).is5xxServerError()) return DETALLE_ERROR_INESPERADO;
+        if (err instanceof HttpMessageConversionException) return "Unable to convert http message";
+        if (err instanceof DataAccessException) return "Failure during data access";
+        String detalle = err.getCause() != null ? err.getCause().getMessage() : err.getMessage();
+        if (!esInterno(detalle)) return detalle;
+        // Ej.: getMessage() de un BadRequestAlertException incluye el toString() del cuerpo (ProblemDetailWithCause[...])
+        if (err instanceof ErrorResponse errorResponse && errorResponse.getBody().getTitle() != null) return errorResponse
+            .getBody()
+            .getTitle();
+        return DETALLE_GENERICO;
+    }
+
+    private boolean esInterno(String mensaje) {
+        return (
+            mensaje != null &&
+            (containsPackageName(mensaje) || Strings.CI.containsAny(mensaje, "Exception", "ProblemDetail", "SQL", "select ", "insert "))
+        );
     }
 
     private HttpStatus getMappedStatus(Throwable err) {

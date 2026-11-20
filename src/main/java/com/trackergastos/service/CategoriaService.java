@@ -1,5 +1,7 @@
 package com.trackergastos.service;
 
+import static net.logstash.logback.argument.StructuredArguments.kv;
+
 import com.trackergastos.domain.Categoria;
 import com.trackergastos.repository.CategoriaRepository;
 import com.trackergastos.repository.GastoRepository;
@@ -71,10 +73,10 @@ public class CategoriaService {
      * @return the persisted entity.
      */
     public CategoriaDTO save(CategoriaDTO categoriaDTO) {
-        LOG.debug("Request to save Categoria : {}", categoriaDTO);
         Categoria categoria = categoriaMapper.toEntity(categoriaDTO);
         categoria.setNombre(nombreValido(categoriaDTO.getNombre(), null));
         categoria = categoriaRepository.save(categoria);
+        LOG.info("Categoría creada", kv("evento", "CATEGORIA_CREADA"), kv("categoriaId", categoria.getId()));
         return categoriaMapper.toDto(categoria);
     }
 
@@ -85,10 +87,10 @@ public class CategoriaService {
      * @return the persisted entity.
      */
     public CategoriaDTO update(CategoriaDTO categoriaDTO) {
-        LOG.debug("Request to update Categoria : {}", categoriaDTO);
         Categoria categoria = categoriaMapper.toEntity(categoriaDTO);
         categoria.setNombre(nombreValido(categoriaDTO.getNombre(), categoriaDTO.getId()));
         categoria = categoriaRepository.save(categoria);
+        LOG.info("Categoría editada", kv("evento", "CATEGORIA_EDITADA"), kv("categoriaId", categoria.getId()));
         return categoriaMapper.toDto(categoria);
     }
 
@@ -99,8 +101,6 @@ public class CategoriaService {
      * @return the persisted entity.
      */
     public Optional<CategoriaDTO> partialUpdate(CategoriaDTO categoriaDTO) {
-        LOG.debug("Request to partially update Categoria : {}", categoriaDTO);
-
         return categoriaRepository
             .findById(categoriaDTO.getId())
             .map(existingCategoria -> {
@@ -112,7 +112,10 @@ public class CategoriaService {
                 return existingCategoria;
             })
             .map(categoriaRepository::save)
-            .map(categoriaMapper::toDto);
+            .map(categoria -> {
+                LOG.info("Categoría editada", kv("evento", "CATEGORIA_EDITADA"), kv("categoriaId", categoria.getId()));
+                return categoriaMapper.toDto(categoria);
+            });
     }
 
     /**
@@ -144,10 +147,10 @@ public class CategoriaService {
      * @param id the id of the entity.
      */
     public void delete(Long id) {
-        LOG.debug("Request to delete Categoria : {}", id);
         if (gastoRepository.exists(GastoSpecifications.deCategoria(id))) {
             throw new ReglaDeNegocioException(ENTIDAD, "categoriaenuso", "No se puede borrar una categoría que tiene gastos");
         }
         categoriaRepository.deleteById(id);
+        LOG.info("Categoría borrada", kv("evento", "CATEGORIA_BORRADA"), kv("categoriaId", id));
     }
 }

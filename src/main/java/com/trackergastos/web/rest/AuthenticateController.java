@@ -3,10 +3,12 @@ package com.trackergastos.web.rest;
 import static com.trackergastos.security.SecurityUtils.AUTHORITIES_CLAIM;
 import static com.trackergastos.security.SecurityUtils.JWT_ALGORITHM;
 import static com.trackergastos.security.SecurityUtils.USER_ID_CLAIM;
+import static net.logstash.logback.argument.StructuredArguments.kv;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.trackergastos.security.DomainUserDetailsService.UserWithId;
 import com.trackergastos.web.rest.vm.LoginVM;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.security.Principal;
 import java.time.Instant;
@@ -18,9 +20,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.JwsHeader;
@@ -38,6 +42,9 @@ public class AuthenticateController {
 
     private static final Logger LOG = LoggerFactory.getLogger(AuthenticateController.class);
 
+    /** Mensaje único de un login rechazado: el cuerpo del 401 no distingue el motivo (spec 004, CA11). */
+    static final String CREDENCIALES_INCORRECTAS = "Bad credentials";
+
     private final JwtEncoder jwtEncoder;
 
     @Value("${jhipster.security.authentication.jwt.token-validity-in-seconds:0}")
@@ -54,10 +61,24 @@ public class AuthenticateController {
     }
 
     @PostMapping("/authenticate")
-    public ResponseEntity<JWTToken> authorize(@Valid @RequestBody LoginVM loginVM) {
+    public ResponseEntity<JWTToken> authorize(@Valid @RequestBody LoginVM loginVM, HttpServletRequest request) {
         var authenticationToken = new UsernamePasswordAuthenticationToken(loginVM.getUsername(), loginVM.getPassword());
 
-        var authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
+        Authentication authentication;
+        try {
+            authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
+        } catch (AuthenticationException e) {
+            // Spec 004: credenciales incorrectas, usuario inexistente o desactivado (CA11) se registran y responden igual.
+            // Nunca se loguea la contraseña ni la excepción (su mensaje puede traer el email).
+            LOG.warn(
+                "Login fallido",
+                kv("evento", "LOGIN_FALLIDO"),
+                kv("login", enmascararEmail(loginVM.getUsername())),
+                kv("ip", request.getRemoteAddr())
+            );
+            throw new BadCredentialsException(CREDENCIALES_INCORRECTAS);
+        }
+        LOG.info("Login correcto", kv("evento", "LOGIN_OK"), kv("login", authentication.getName()));
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = this.createToken(authentication, loginVM.isRememberMe());
         var httpHeaders = new HttpHeaders();
@@ -75,6 +96,22 @@ public class AuthenticateController {
     public ResponseEntity<Void> isAuthenticated(Principal principal) {
         LOG.debug("REST request to check if the current user is authenticated");
         return ResponseEntity.status(principal == null ? HttpStatus.UNAUTHORIZED : HttpStatus.NO_CONTENT).build();
+    }
+
+    /**
+     * El login intentado puede ser un email, que es dato sensible (spec 004, regla 3): se registra como
+     * {@code a***@dominio.com}.
+     */
+    static String enmascararEmail(String login) {
+        if (login == null) {
+            return null;
+        }
+        int arroba = login.indexOf('@');
+        if (arroba < 0) {
+            return login;
+        }
+        String inicial = arroba > 0 ? login.substring(0, 1) : "";
+        return inicial + "***" + login.substring(arroba);
     }
 
     public String createToken(Authentication authentication, boolean rememberMe) {

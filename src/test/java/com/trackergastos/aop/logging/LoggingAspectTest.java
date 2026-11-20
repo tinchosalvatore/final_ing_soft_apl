@@ -58,17 +58,15 @@ class LoggingAspectTest {
         return appender.list.stream().map(ILoggingEvent::getFormattedMessage).toList();
     }
 
+    // Criterio 004-CA02 (perfil dev): el aspecto no loguea argumentos ni resultados (montos, descripciones, emails)
     @Test
-    void logAroundLogsEnterAndExit() throws Throwable {
+    void logAroundLogsEnterAndExitWithoutArgumentsNorResult() throws Throwable {
         when(joinPoint.proceed()).thenReturn("result");
 
         Object result = aspect.logAround(joinPoint);
 
         assertThat(result).isEqualTo("result");
-        assertThat(messages()).containsExactly(
-            "Enter: loggedMethod() with argument[s] = [arg]",
-            "Exit: loggedMethod() with result = result"
-        );
+        assertThat(messages()).containsExactly("Enter: loggedMethod()", "Exit: loggedMethod()");
     }
 
     @Test
@@ -79,24 +77,15 @@ class LoggingAspectTest {
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("invalid");
 
-        assertThat(messages()).contains("Illegal argument: [arg] in loggedMethod()");
+        assertThat(messages()).containsExactly("Enter: loggedMethod()", "Illegal argument in loggedMethod()");
     }
 
+    // Criterio 004-CA02: el mensaje de una excepción puede traer datos sensibles; solo se loguea el tipo
     @Test
-    void logAfterThrowingLogsExceptionWithStackTraceInDevProfile() {
-        aspect.logAfterThrowing(joinPoint, new IllegalStateException("failed"));
+    void logAfterThrowingLogsOnlyTheExceptionType() {
+        aspect.logAfterThrowing(joinPoint, new IllegalStateException("ana@example.com", new RuntimeException("1234")));
 
-        assertThat(messages()).containsExactly("Exception in loggedMethod() with cause = 'NULL' and exception = 'failed'");
-        assertThat(appender.list.getFirst().getThrowableProxy()).isNotNull();
-    }
-
-    @Test
-    void logAfterThrowingLogsCauseOnlyOutsideDevProfile() {
-        when(env.acceptsProfiles(any(Profiles.class))).thenReturn(false);
-
-        aspect.logAfterThrowing(joinPoint, new IllegalStateException("failed", new RuntimeException("root")));
-
-        assertThat(messages()).containsExactly("Exception in loggedMethod() with cause = java.lang.RuntimeException: root");
+        assertThat(messages()).containsExactly("Exception in loggedMethod(): java.lang.IllegalStateException");
         assertThat(appender.list.getFirst().getThrowableProxy()).isNull();
     }
 }

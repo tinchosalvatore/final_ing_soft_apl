@@ -60,18 +60,18 @@ public class UserService {
     }
 
     public Optional<User> activateRegistration(String key) {
-        LOG.debug("Activating user for activation key {}", key);
+        LOG.debug("Activating user");
         return userRepository.findOneByActivationKey(key).map(user -> {
             // activate given user for the registration key.
             user.setActivated(true);
             user.setActivationKey(null);
-            LOG.debug("Activated user: {}", user);
+            LOG.debug("Activated user: {}", user.getLogin());
             return user;
         });
     }
 
     public Optional<User> completePasswordReset(String newPassword, String key) {
-        LOG.debug("Reset user password for reset key {}", key);
+        LOG.debug("Reset user password");
         return userRepository
             .findOneByResetKey(key)
             .filter(user -> user.getResetDate().isAfter(Instant.now().minus(1, ChronoUnit.DAYS)))
@@ -131,7 +131,7 @@ public class UserService {
         authorityRepository.findById(AuthoritiesConstants.USER).ifPresent(authorities::add);
         newUser.setAuthorities(authorities);
         userRepository.save(newUser);
-        LOG.debug("Created Information for User: {}", newUser);
+        LOG.debug("Created Information for User: {}", newUser.getLogin());
         return newUser;
     }
 
@@ -174,7 +174,7 @@ public class UserService {
             user.setAuthorities(authorities);
         }
         userRepository.save(user);
-        LOG.debug("Created Information for User: {}", user);
+        LOG.debug("Created Information for User: {}", user.getLogin());
         return user;
     }
 
@@ -208,7 +208,7 @@ public class UserService {
                     .map(Optional::get)
                     .forEach(managedAuthorities::add);
                 userRepository.save(user);
-                LOG.debug("Changed Information for User: {}", user);
+                LOG.debug("Changed Information for User: {}", user.getLogin());
                 return user;
             })
             .map(AdminUserDTO::new);
@@ -221,7 +221,7 @@ public class UserService {
         }
         userRepository.findOneByLogin(login).ifPresent(user -> {
             userRepository.delete(user);
-            LOG.debug("Deleted User: {}", user);
+            LOG.debug("Deleted User: {}", user.getLogin());
         });
     }
 
@@ -246,7 +246,7 @@ public class UserService {
                 user.setLangKey(langKey);
                 user.setImageUrl(imageUrl);
                 userRepository.save(user);
-                LOG.debug("Changed Information for User: {}", user);
+                LOG.debug("Changed Information for User: {}", user.getLogin());
             });
     }
 
@@ -261,7 +261,7 @@ public class UserService {
                 }
                 String encryptedPassword = passwordEncoder.encode(newPassword);
                 user.setPassword(encryptedPassword);
-                LOG.debug("Changed password for User: {}", user);
+                LOG.debug("Changed password for User: {}", user.getLogin());
             });
     }
 
