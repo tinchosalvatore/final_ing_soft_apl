@@ -1,0 +1,54 @@
+/*
+ * tracker.jh — Fuente única de verdad del modelo (SDD determinista).
+ * Generar o regenerar:  npx generator-jhipster@9.4.0 jdl tracker.jh
+ * Cambios al modelo: commit limpio -> editar este archivo -> regenerar -> resolver conflictos -> revisar el diff.
+ * Decisiones: ADR-0001 (stack), ADR-0002 (Postgres en dev), ADR-0003 (Playwright), ADR-0007 (propiedad de los datos).
+ * Comportamiento esperado: docs/specs/001-gastos/spec.md
+ */
+
+application {
+  config {
+    baseName trackerGastos
+    applicationType monolith
+    packageName com.trackergastos
+    authenticationType jwt
+    buildTool maven
+    clientFramework react
+    databaseType sql
+    devDatabaseType postgresql
+    prodDatabaseType postgresql
+    cacheProvider no
+    enableHibernateCache false
+    enableTranslation true
+    nativeLanguage es
+    languages [es]
+    testFrameworks [playwright]
+    serverPort 8080
+  }
+  entities *
+}
+
+/** Rubro que agrupa gastos (ej: Supermercado, Transporte). Las administra un ADMIN y las usan todos. */
+entity Categoria {
+  nombre String required minlength(2) maxlength(40) unique
+}
+
+/**
+ * Un gasto de un usuario. El dueño lo asigna el backend a partir del usuario autenticado (spec 001).
+ * Reglas de negocio que NO expresa el JDL (monto > 0, fecha no futura, propiedad): spec 001.
+ */
+entity Gasto {
+  monto BigDecimal required
+  fecha LocalDate required
+  descripcion String maxlength(140)
+}
+
+relationship ManyToOne {
+  Gasto{categoria(nombre) required} to Categoria
+  Gasto{user(login)} to User with builtInEntity
+}
+
+dto * with mapstruct
+service * with serviceClass
+paginate Gasto with pagination // JHipster 9.4 avisa que está "deprecated", pero es la única sintaxis que su parser acepta
+filter Gasto

@@ -1,0 +1,128 @@
+# Pipeline de CI del Tracker de Gastos.
+# VERSIÓN INICIAL escrita por el agente documentador, traduciendo el pipeline de referencia de la cátedra
+# (Node: npm ci / npm test / npm audit / semgrep / gitleaks) a este stack (Java + Maven + React + Playwright).
+# La termina y ajusta el agente CI siguiendo docs/specs/005-integracion-continua/spec.md y docs/catedra/ci.md.
+# Decisión y diferencias con el original: docs/adr/ADR-0006-pipeline-ci.md
+
+# Nombre del workflow, tal como aparece en la pestaña Actions de GitHub.
+name: pipeline
+
+# Eventos que disparan el workflow.
+on:
+  # Cada vez que se abre o actualiza un PR contra main (igual que el de la cátedra).
+  pull_request:
+    branches: [main]
+  # Al integrar en main, para que main también tenga su estado verde/rojo.
+  push:
+    branches: [main]
+
+# Permisos del GITHUB_TOKEN: solo los necesarios.
+permissions:
+  # Solo lectura del código.
+  contents: read
+  # Gitleaks comenta los hallazgos en el PR.
+  pull-requests: write
+
+# Si llega un push nuevo al mismo PR, se cancela la ejecución anterior (no gasta minutos en código viejo).
+concurrency:
+  group: pipeline-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Un único job, como el de la cátedra: verifica el código antes de permitir la fusión.
+  # Su nombre ("verificar") es el check obligatorio en la protección de la rama main.
+  verificar:
+    runs-on: ubuntu-latest
+    # Tope de tiempo: Maven + Testcontainers + E2E son lentos, pero nunca deberían pasar de esto.
+    timeout-minutes: 40
+    env:
+      SPRING_OUTPUT_ANSI_ENABLED: DETECT
+      SPRING_JPA_SHOW_SQL: false
+
+    # Orden: lo más barato primero, para fallar rápido (secretos → SAST → SCA → tests → E2E).
+    steps:
+      # Descarga el código. Fijado a un SHA (no a un tag que puede moverse) contra ataques de cadena de suministro.
+      # fetch-depth: 0 trae todo el historial para que Gitleaks revise todos los commits del PR.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: { fetch-depth: 0 }
+
+      # --- 1. Secretos -------------------------------------------------------------------------
+      # Gitleaks busca claves, tokens y contraseñas en el código y el historial. Fijado a un SHA (v2.3.9).
+      - name: Secretos (Gitleaks)
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # --- 2. SAST -----------------------------------------------------------------------------
+      # Semgrep analiza el código sin ejecutarlo buscando patrones inseguros conocidos.
+      # Versión fija de Semgrep (no "latest") por el factor II. --error hace fallar el paso si hay hallazgos.
+      # TODO(agente CI): fijar la versión exacta de semgrep vigente al implementar.
+      - name: Instalar Semgrep
+        run: pip install semgrep==1.*
+      - name: SAST (Semgrep)
+        run: semgrep scan --config p/java --config p/typescript --config p/react --error --exclude target --exclude node_modules
+
+      # --- 3. SCA ------------------------------------------------------------------------------
+      # Trivy busca vulnerabilidades conocidas en las dependencias (pom.xml y package-lock.json).
+      # Reemplaza al "npm audit" de la cátedra porque cubre Maven y npm a la vez. Fijado a un SHA (v0.36.0).
+      - name: SCA (Trivy)
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          # Solo falla por vulnerabilidades que ya tienen versión corregida (spec 005, casos borde).
+          ignore-unfixed: true
+          exit-code: '1'
+
+      # --- Entorno de build ----------------------------------------------------------------------
+      # Java 21 (versión recomendada por JHipster 9.4). Fijado a un SHA (v6.3.0). Cachea ~/.m2.
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      # Node (versión recomendada por JHipster 9.4). Fijado a un SHA (v7.1.0). Cachea ~/.npm.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24.21.0'
+          cache: npm
+
+      # Instala las dependencias exactas de package-lock.json (limpia y reproducible).
+      - run: npm ci
+
+      # --- 4. Tests de backend -----------------------------------------------------------------
+      # Unitarios + integración (Testcontainers con Postgres real) + ArchUnit. Script generado por JHipster.
+      - name: Tests de backend
+        run: npm run ci:backend:test
+
+      # --- 5. Tests de frontend ----------------------------------------------------------------
+      # Vitest. Script generado por JHipster.
+      - name: Tests de frontend
+        run: npm run ci:frontend:test
+
+      # --- 6. E2E ------------------------------------------------------------------------------
+      # Empaqueta la app, levanta Postgres con docker compose y corre Playwright contra la app real.
+      - name: E2E - empaquetar
+        run: npm run ci:e2e:package
+      - name: E2E - levantar servicios
+        run: npm run ci:e2e:prepare
+      - name: E2E - Playwright
+        run: npm run ci:e2e:run
+
+      # Reporte HTML y traces de Playwright, descargables desde la ejecución (también si falló).
+      # TODO(agente CI): confirmar la carpeta real que genera JHipster (outputDir/report de playwright.config.ts).
+      - name: Guardar reporte E2E
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: reporte-e2e
+          path: target/playwright/
+          retention-days: 7
+          if-no-files-found: warn
+
+      # Baja los contenedores aunque algo haya fallado.
+      - name: E2E - limpiar
+        if: ${{ always() }}
+        run: npm run ci:e2e:teardown --if-present

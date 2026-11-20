@@ -1,2 +1,8 @@
 # enunciado personal
 docs/enunciado.md
+
+# machetes personales para la defensa del final (no son para agentes)
+docs/defense/
+
+# secretos locales (ver .env.example)
+.env
