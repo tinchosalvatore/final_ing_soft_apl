@@ -28,13 +28,13 @@ Es la lógica de negocio propia del proyecto (no la genera JHipster), y por eso 
    - **Variación contra el mes anterior**: diferencia en pesos (puede ser negativa) y diferencia porcentual.
 3. Reglas de cálculo:
    - Los montos se suman **exactos**, sin errores de redondeo (0,10 + 0,20 = 0,30).
-   - La participación se redondea a **1 decimal, con la mitad hacia arriba** (12,25 → 12,3). La suma de las participaciones puede no dar exactamente 100 por el redondeo, y eso se acepta.
-   - Variación porcentual = (total del mes − total del mes anterior) / total del mes anterior × 100, redondeada a 1 decimal con la mitad hacia arriba.
+   - La participación se redondea a **1 decimal, con la mitad alejándose del cero** (12,25 → 12,3; −12,25 → −12,3). La suma de las participaciones puede no dar exactamente 100 por el redondeo, y eso se acepta.
+   - Variación porcentual = (total del mes − total del mes anterior) / total del mes anterior × 100, redondeada a 1 decimal con la mitad alejándose del cero.
    - Si el total del mes anterior es 0, la variación porcentual **no se informa** (se muestra "sin datos del mes anterior"), pero la diferencia en pesos sí.
-4. El detalle por categoría se ordena por total de mayor a menor. Si dos categorías empatan, se ordenan por nombre alfabéticamente.
+4. El detalle por categoría se ordena por total de mayor a menor. Si dos categorías empatan, se ordenan por nombre en **orden alfabético del español**, sin distinguir mayúsculas ni acentos (almacén, Óptica, Peluquería).
 5. El resumen considera **únicamente los gastos del usuario que lo pide**.
-6. Se puede pedir cualquier mes desde `2000-01` hasta el mes actual. Un mes posterior al actual, uno anterior a `2000-01` o un formato inválido se rechazan con error de validación.
-7. En la interfaz hay una pantalla "Resumen" con un selector de mes (por defecto el actual, con botones de mes anterior y siguiente; el siguiente se deshabilita en el mes actual). Muestra el total, la variación (indicando claramente si es aumento o baja) y la tabla por categoría.
+6. Se puede pedir cualquier mes desde `2000-01` hasta el mes actual. Un mes posterior al actual, uno anterior a `2000-01` o un formato inválido se rechazan con error de validación. Un `mes` vacío (`?mes=`) también es inválido: el mes por defecto aplica solo cuando el parámetro no viene.
+7. En la interfaz hay una pantalla "Resumen" con un selector de mes (por defecto el actual, con botones de mes anterior y siguiente; el siguiente se deshabilita en el mes actual y el anterior en `2000-01`). Muestra el total, la variación (indicando claramente si es aumento o baja) y la tabla por categoría.
 
 ## 4. Casos borde
 - Mes sin gastos → total 0, cantidad 0, detalle vacío y variación calculada contra el mes anterior (si el anterior tuvo gastos: −100 %).
@@ -80,9 +80,9 @@ No describe *cómo* se implementa: fija lo que un test puede observar desde afue
 | `cantidad` | Cantidad de gastos del mes |
 | `categorias[]` | `{ nombre, total, cantidad, participacion }`, en el orden del punto 4 |
 | `diferencia` | Total del mes − total del mes anterior (puede ser negativa) |
-| `variacionPorcentual` | Escala 0 a 100 con 1 decimal (`20.0`, no `0.2`). `null` = no informada |
+| `variacionPorcentual` | Escala 0 a 100 con 1 decimal (`20.0`, no `0.2`). Si no se informa, el campo **no aparece** en la respuesta |
 
-`participacion` usa la misma escala 0 a 100 con 1 decimal (`75.0`).
+`participacion` usa la misma escala 0 a 100 con 1 decimal (`75.0`). Una categoría con un monto muy chico frente al total puede mostrar `0,0 %`, y eso es correcto.
 
 ### Interfaz (textos que usan los E2E)
 | Elemento | Texto |
