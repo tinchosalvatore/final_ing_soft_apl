@@ -91,7 +91,9 @@ No describe *cómo* se implementa: fija lo que un test puede observar desde afue
 | Selector de mes | Botones "Mes anterior" y "Mes siguiente" |
 | Total | `$ 1.500,50` (es-AR) |
 | Participación y variación | `75,0 %`, `+20,0 %`, `-100,0 %` |
-| Sentido de la variación | "Aumento" o "Baja" |
+| Sentido de la variación | "Aumento", "Baja" o, si la diferencia es exactamente 0, "Sin cambios" (con `0,0 %`) |
+| Diferencia en pesos | Con signo: `+$ 200,00` / `-$ 200,00` / `$ 0,00` |
+| Menú | "Resumen" al lado de "Mis gastos", para todo usuario con sesión |
 | Variación no informada | "Sin datos del mes anterior" |
 
 ## 6. Fuera de alcance
