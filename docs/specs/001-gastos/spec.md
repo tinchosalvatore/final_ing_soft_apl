@@ -38,12 +38,12 @@ Además del objetivo de producto hay un objetivo de seguridad: **los gastos son 
 ### Categorías
 9. Cualquier usuario con sesión puede **listar** las categorías (para elegir una al cargar un gasto).
 10. Solo un `ADMIN` puede **crear, renombrar y borrar** categorías. Un `USER` que lo intente recibe "prohibido".
-11. El nombre de una categoría tiene entre 2 y 40 caracteres y es **único sin distinguir mayúsculas ni espacios al inicio o al final** ("Supermercado" y " supermercado " son el mismo nombre).
+11. El nombre de una categoría tiene entre 2 y 40 caracteres y es **único sin distinguir mayúsculas ni espacios al inicio o al final** ("Supermercado" y " supermercado " son el mismo nombre). El nombre se guarda **sin los espacios del inicio y del final**, respetando las mayúsculas que escribió el ADMIN.
 12. **No se puede borrar una categoría que tiene gastos asociados.** El sistema lo rechaza con un mensaje que explica el motivo.
 13. El sistema arranca con estas categorías cargadas: Supermercado, Transporte, Servicios, Salud, Ocio, Otros.
 
 ### Cuentas
-16. **En producción no hay registro público.** Las cuentas las crea un `ADMIN` desde la administración de usuarios. Un intento de registrarse se rechaza y **no crea, modifica ni borra ningún usuario** (en particular, no reemplaza una cuenta desactivada). En los entornos de desarrollo y de pruebas el registro sigue disponible. *(Decisión del humano a partir del verify del paso 000, riesgo R1 de `seguridad.md`.)*
+16. **En producción no hay registro público.** Las cuentas las crea un `ADMIN` desde la administración de usuarios. Un intento de registrarse se rechaza y **no crea, modifica ni borra ningún usuario** (en particular, no reemplaza una cuenta desactivada). En los entornos de desarrollo y de pruebas (incluido el perfil de muestras que usan el CI y la demo) el registro sigue disponible. *(Decisión del humano a partir del verify del paso 000, riesgo R1 de `seguridad.md`.)*
 
 ### Interfaz
 14. El menú principal tiene "Mis gastos" (listado con filtros y botón para nuevo gasto). La gestión de categorías aparece solo para `ADMIN`.
@@ -95,7 +95,7 @@ No describe *cómo* se implementa: fija lo que un test puede observar desde afue
 | USER que escribe categorías (001-CA11) | **403** |
 | Registro con el registro deshabilitado (001-CA16) | **401** |
 | Conteo de gastos (`/api/gastos/count`, que genera JHipster) | Cuenta **solo los gastos del usuario autenticado**, con los mismos filtros. Si no, revela cuántos gastos tienen los demás (A01) |
-| Respuesta de crear o editar un gasto | Incluye el `user.login` del dueño (sin otros datos del usuario) |
+| Respuesta de crear o editar un gasto | Incluye `user.id` y `user.login` del dueño (ningún otro dato del usuario: ni email ni nombre) |
 | Orden del listado (punto 4) | El backend **impone siempre** fecha descendente y después id descendente. Si el cliente manda otro `sort`, se ignora |
 
 ### Interfaz (textos que usan los E2E)
