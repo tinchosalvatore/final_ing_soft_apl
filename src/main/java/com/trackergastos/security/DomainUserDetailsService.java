@@ -32,7 +32,7 @@ public class DomainUserDetailsService implements UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(final String login) {
-        LOG.debug("Authenticating {}", login);
+        LOG.debug("Authenticating");
 
         if (new EmailValidator().isValid(login, null)) {
             return userRepository

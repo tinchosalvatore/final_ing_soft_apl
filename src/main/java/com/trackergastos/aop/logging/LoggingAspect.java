@@ -1,6 +1,5 @@
 package com.trackergastos.aop.logging;
 
-import java.util.Arrays;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.AfterThrowing;
@@ -10,8 +9,6 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
-import org.springframework.core.env.Profiles;
-import tech.jhipster.config.JHipsterConstants;
 
 /**
  * Aspect for logging execution of service and repository Spring components.
@@ -87,7 +84,8 @@ public class LoggingAspect {
     public Object logAround(ProceedingJoinPoint joinPoint) throws Throwable {
         var log = logger(joinPoint);
         if (log.isDebugEnabled()) {
-            log.debug("Enter: {}() with argument[s] = {}", joinPoint.getSignature().getName(), Arrays.toString(joinPoint.getArgs()));
+            // Spec 004: sin argumentos ni resultados (traerían montos, descripciones o emails)
+            log.debug("Enter: {}()", joinPoint.getSignature().getName());
         }
         try {
             Object result = joinPoint.proceed();
@@ -101,31 +99,20 @@ public class LoggingAspect {
 
     private void logExit(Logger log, JoinPoint joinPoint, Object result) {
         if (log.isDebugEnabled()) {
-            log.debug("Exit: {}() with result = {}", joinPoint.getSignature().getName(), result);
+            log.debug("Exit: {}()", joinPoint.getSignature().getName());
         }
     }
 
     private void logIllegalArgument(Logger log, JoinPoint joinPoint) {
         if (log.isErrorEnabled()) {
-            log.error("Illegal argument: {} in {}()", Arrays.toString(joinPoint.getArgs()), joinPoint.getSignature().getName());
+            log.error("Illegal argument in {}()", joinPoint.getSignature().getName());
         }
     }
 
     private void logException(JoinPoint joinPoint, Throwable e) {
-        if (env.acceptsProfiles(Profiles.of(JHipsterConstants.SPRING_PROFILE_DEVELOPMENT))) {
-            logger(joinPoint).error(
-                "Exception in {}() with cause = '{}' and exception = '{}'",
-                joinPoint.getSignature().getName(),
-                e.getCause() != null ? e.getCause() : "NULL",
-                e.getMessage(),
-                e
-            );
-        } else {
-            logger(joinPoint).error(
-                "Exception in {}() with cause = {}",
-                joinPoint.getSignature().getName(),
-                e.getCause() != null ? String.valueOf(e.getCause()) : "NULL"
-            );
+        // Spec 004: solo el tipo; el mensaje puede traer datos sensibles (ej. el email de un login)
+        if (logger(joinPoint).isDebugEnabled()) {
+            logger(joinPoint).debug("Exception in {}(): {}", joinPoint.getSignature().getName(), e.getClass().getName());
         }
     }
 }
