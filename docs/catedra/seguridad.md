@@ -58,6 +58,14 @@ Lo que ya trae JHipster y **no hay que romper**: contraseñas con **BCrypt** (A0
 | R1 | **Toma de cuentas no activadas por el registro.** `UserService.registerUser` (generado) **borra** una cuenta existente que no esté activada y crea otra con el mismo login. En prod, `POST /api/register` anónimo con login `user` reemplaza al `user` desactivado por S5, y lo mismo pasa con cualquier cuenta que un ADMIN desactive (si tiene gastos, la FK haría fallar el borrado con un error 500) | verify del 000 (O2) | **Decidido:** en prod no hay registro público; las cuentas las crea un ADMIN. Regla 16 y criterio 001-CA16 de la spec 001 |
 | R2 | **Rotar `TRACKER_ADMIN_PASSWORD_HASH` impide arrancar prod.** Liquibase incluye el parámetro en el checksum del changeset de S5: con otro hash, la validación falla | verify del 000 (O1) | **Decidido:** `runOnChange="true"` en el changeset. La variable es la fuente de verdad: cambiarla vuelve a aplicar el hash y rota la contraseña (factor III). Consecuencia aceptada: pisa la contraseña que admin haya cambiado desde la UI. Lo implementa el coder en un PR chico (junto con `SPRING_MAIL_HOST` por variable) |
 
+### Limitaciones conocidas aceptadas (verify de la 003 y la 004)
+| ID | Limitación | Por qué se acepta |
+|---|---|---|
+| L1 | Con "Recordarme" y el JWT vencido, sin red la app muestra la cuenta y los datos guardados | "Recordarme" = dispositivo de confianza. Con red, el servidor rechaza el token y se limpia todo |
+| L2 | `LOGIN_FALLIDO` registra el login tal como se escribió: si alguien escribe la contraseña en el campo de usuario, va a los logs | Enmascararlo impediría investigar ataques. Los emails ya se enmascaran |
+| L3 | El stack de `ERROR_INESPERADO` puede incluir valores de mensajes del driver (por ejemplo `Key (email)=…`) | Solo en el log, nunca en la respuesta. Es un entorno de demo |
+| L4 | ELK sin seguridad (sin usuarios ni TLS) | Entorno local o de demo (spec 004, fuera de alcance) |
+
 ## 5. Qué queda afuera
 - OWASP Top 10 para aplicaciones con LLM (la app no usa LLMs).
 - MFA, bloqueo de cuenta o retardo entre reintentos de login, chequeo de contraseñas filtradas.
