@@ -35,8 +35,11 @@ Se aplica completo en la **spec 002** (lógica pura, ideal para TDD) y en los cr
 | E2E de negocio | `src/test/javascript/playwright/e2e/negocio/NNN-*.pw.ts` |
 
 ### E2E con Playwright + codegen
-1. Levantar la app (y para la spec 003, el build de producción).
-2. `npx playwright codegen http://localhost:8080` y recorrer el flujo del criterio.
+**La grabación la hace el humano; el agente testing la prepara y la pule.** Codegen es interactivo: abre un navegador y graba lo que hace una persona. Grabar el flujo a mano es también cómo el humano valida que la UI cumple el criterio.
+
+1. **Agente testing:** levanta la app (y para la spec 003, el build de producción) y le pasa al humano el comando y el guion del criterio: qué pasos recorrer y qué datos cargar.
+2. **Humano:** `npx playwright codegen http://localhost:8080`, recorre el flujo y copia el código que genera codegen.
+3. **Agente testing:** sigue con los pasos 3 a 6.
 3. Pegar el código grabado en el `.pw.ts` correspondiente (extensión **`.pw.ts`**, si no Vitest lo toma).
 4. Ajustarlo:
    - **Locators por rol, label o texto** (`getByRole('button', { name: 'Guardar' })`, `getByLabel('Monto')`). Nada de selectores CSS ni XPath. Si un elemento no tiene rol o label accesible, se le agrega un `data-testid` (y se avisa al implementador).
