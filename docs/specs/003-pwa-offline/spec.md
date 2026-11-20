@@ -70,6 +70,29 @@ Objetivo: que la app **se pueda instalar** en el celular o la computadora, que *
 | 003-CA10 | Aislamiento en dispositivo | `ana` cierra sesión y entra `beto` en el mismo navegador, sin red | `beto` no ve ningún dato de `ana` |
 | 003-CA11 | Mobile | Viewport 360×740 | "Mis gastos", el formulario y el resumen se usan sin scroll horizontal |
 
+## 5.1 Contrato observable (para escribir los tests)
+Lo que un test puede observar desde afuera. Lo completó el documentador antes de la fase roja.
+
+### Instalación y almacenamiento
+| Elemento | Valor |
+|---|---|
+| Manifest | `/manifest.webmanifest`: `name` "Tracker de Gastos", `short_name` "Gastos", `display: standalone`, `start_url: /`, íconos de 192 y 512 px (uno `maskable`) |
+| Service worker | Registrado con scope `/`, **solo en el build de producción**. Los E2E de esta spec corren contra el jar de prod (como el CI) |
+| Caché de la API | Nombre `api-v1` en Cache Storage |
+| Base offline | IndexedDB `tracker-offline`, versión 1, *object store* `pendientes` con índice `login` |
+
+### Interfaz (textos que usan los E2E)
+| Elemento | Texto |
+|---|---|
+| Aviso de datos guardados (punto 4) | "Sin conexión: mostrando datos guardados" |
+| Pantalla nunca vista (punto 5) | "Esta información no está disponible sin conexión" |
+| Marca de un pendiente (punto 8) | "Pendiente de sincronizar" |
+| Indicador de pendientes | "1 pendiente" / "N pendientes" (no se muestra con 0) |
+| Marca de un rechazado (punto 11) | "Rechazado: <motivo del servidor>" |
+| Acciones sobre un rechazado | Botones "Reintentar" y "Descartar" |
+| Editar o borrar sin conexión (punto 13) | Botones deshabilitados con el texto de ayuda "No disponible sin conexión" |
+| Aviso al cerrar sesión (punto 14) | "Tenés N gastos sin sincronizar. Si cerrás sesión se van a perder.", con los botones "Cerrar sesión igual" y "Cancelar" |
+
 ## 6. Fuera de alcance
 - Sincronizar con la app cerrada (sincronización en segundo plano). Ver ADR-0005.
 - Editar o borrar gastos sin conexión.

@@ -71,6 +71,33 @@ Hoy, si algo falla en el servidor o alguien intenta adivinar contraseñas, nadie
 | 004-CA10 | Tolerancia a caída | Sistema de registros apagado, usar la app | La app responde normalmente; los registros salen por consola |
 | 004-CA11 | Usuario desactivado | Login de un usuario desactivado, con **cualquier** contraseña (correcta o no) | Misma respuesta que credenciales incorrectas ("no autorizado"); registro `LOGIN_FALLIDO`; ningún `ERROR_INESPERADO` |
 
+## 5.1 Contrato observable (para escribir los tests)
+Lo que un test puede observar desde afuera. Lo completó el documentador antes de la fase roja.
+
+### Campos de cada registro (JSON)
+| Campo | Contenido |
+|---|---|
+| `@timestamp`, `level`, `message` | Los del encoder |
+| `app_name` | `trackerGastos` |
+| `traceId`, `spanId` | Identificador de traza de la petición |
+| `usuario` | Login del usuario autenticado (ausente si no hay sesión) |
+| `evento` | Código de la tabla del punto 2 |
+| Datos del evento | `login`, `ip`, `operacion`, `gastoId`, `categoriaId`, `metodo`, `ruta` (el patrón, ej. `/api/gastos/{id}`), `estado`, `duracion_ms`, `tipoError` |
+
+### Respuestas de error
+| Situación | Respuesta |
+|---|---|
+| Login fallido (credenciales incorrectas, usuario inexistente o desactivado) | **401**, con el **mismo cuerpo** en los tres casos |
+| Cualquier error 4xx o 5xx | Ningún campo de la respuesta contiene `com.trackergastos`, `Exception`, `ProblemDetailWithCause` ni SQL |
+
+### Kibana (nombres de los objetos exportados)
+| Objeto | Nombre |
+|---|---|
+| Data view | `tracker-logs-*` |
+| Búsqueda guardada | "Eventos de seguridad" |
+| Dashboard | "Salud – Tracker de Gastos" |
+| Regla de alerta | "Logins fallidos (5 en 5 min)" |
+
 ### Hallazgos del verify de la 001 que resuelve esta spec
 - **004-CA05 también vale para los 400:** hoy el 400 `idinvalid` que genera JHipster muestra `ProblemDetailWithCause[...]` en el campo `detail`. Ningún error, ni 4xx ni 5xx, expone nombres de clases internas.
 - **Perfil dev:** el `LoggingAspect` que genera JHipster loguea los DTO completos, con monto y descripción. La regla 3 (sin datos sensibles) vale **también en dev**.
