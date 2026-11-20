@@ -71,6 +71,10 @@ Hoy, si algo falla en el servidor o alguien intenta adivinar contraseñas, nadie
 | 004-CA10 | Tolerancia a caída | Sistema de registros apagado, usar la app | La app responde normalmente; los registros salen por consola |
 | 004-CA11 | Usuario desactivado | Login de un usuario desactivado, con **cualquier** contraseña (correcta o no) | Misma respuesta que credenciales incorrectas ("no autorizado"); registro `LOGIN_FALLIDO`; ningún `ERROR_INESPERADO` |
 
+### Hallazgos del verify de la 001 que resuelve esta spec
+- **004-CA05 también vale para los 400:** hoy el 400 `idinvalid` que genera JHipster muestra `ProblemDetailWithCause[...]` en el campo `detail`. Ningún error, ni 4xx ni 5xx, expone nombres de clases internas.
+- **Perfil dev:** el `LoggingAspect` que genera JHipster loguea los DTO completos, con monto y descripción. La regla 3 (sin datos sensibles) vale **también en dev**.
+
 ## 6. Fuera de alcance
 - Política de retención y borrado de registros.
 - Notificaciones por correo o chat (alcanza con que la alerta quede registrada en el panel).

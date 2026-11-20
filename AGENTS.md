@@ -78,6 +78,7 @@ Si un comando de esta tabla deja de ser correcto (porque JHipster lo generó dis
 12. **Trampas conocidas del código generado:**
     - Las clases propias que usan el metamodelo JPA (`Gasto_`, `Categoria_`...) lo importan con **wildcard** (`import com.trackergastos.domain.*;`), como el código generado. Con un import puntual, el javadoc del CI falla porque corre antes de compilar.
     - El `.gitignore` generado tiene `*.log*`, que también ignora archivos como `algo.logica.ts` o `x.logger.ts`. No uses nombres con `.log` después de un punto. Antes de pushear, revisá `git status --ignored` si un archivo nuevo "no aparece".
+13. **No corras E2E en paralelo con otro agente** sobre la misma app o el mismo worktree: Playwright vacía `target/playwright/` al arrancar y los dos usan los mismos datos. Avisá antes, o usá tu propio worktree y `--output` en un directorio tuyo.
 
 ---
 
