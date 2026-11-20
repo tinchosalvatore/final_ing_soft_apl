@@ -15,6 +15,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -38,10 +39,19 @@ public class UserService {
 
     private final AuthorityRepository authorityRepository;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, AuthorityRepository authorityRepository) {
+    /** Spec 001, regla 16: en prod no hay registro público ({@code application.registro.habilitado}). */
+    private final boolean registroHabilitado;
+
+    public UserService(
+        UserRepository userRepository,
+        PasswordEncoder passwordEncoder,
+        AuthorityRepository authorityRepository,
+        @Value("${application.registro.habilitado:true}") boolean registroHabilitado
+    ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authorityRepository = authorityRepository;
+        this.registroHabilitado = registroHabilitado;
     }
 
     public Optional<User> activateRegistration(String key) {
@@ -80,6 +90,10 @@ public class UserService {
     }
 
     public User registerUser(AdminUserDTO userDTO, String password) {
+        // 001-CA16: se corta antes de tocar la tabla de usuarios (removeNonActivatedUser borraría una cuenta desactivada).
+        if (!registroHabilitado) {
+            throw new RegistroDeshabilitadoException();
+        }
         userRepository.findOneByLogin(userDTO.getLogin().toLowerCase()).ifPresent(existingUser -> {
             boolean removed = removeNonActivatedUser(existingUser);
             if (!removed) {
