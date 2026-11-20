@@ -171,6 +171,9 @@ server:
     session:
       cookie:
         http-only: true
+  # Spec 003: el manifest de la PWA se sirve con su tipo (Tomcat no lo trae)
+  mime-mappings:
+    webmanifest: application/manifest+json
 
 springdoc:
   show-actuator: true

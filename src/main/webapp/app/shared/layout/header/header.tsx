@@ -11,6 +11,8 @@ import { setLocale } from 'app/shared/reducers/locale';
 import { AccountMenu, AdminMenu, EntitiesMenu, LocaleMenu } from '../menus';
 import { MenuCategorias, MenuMisGastos, MenuResumen } from 'app/modules/gastos/menu-gastos';
 
+import IndicadorPendientes from 'app/shared/offline/indicador-pendientes';
+
 import { Brand, Home } from './header-components';
 
 export interface IHeaderProps {
@@ -59,6 +61,8 @@ const Header = (props: IHeaderProps) => {
       <Navbar data-cy="navbar" data-bs-theme="dark" expand="md" fixed="top" className="jh-navbar" collapseOnSelect>
         <Navbar.Toggle aria-controls="header-tabs" aria-label="Menu" />
         <Brand />
+        {/* Spec 003, punto 8 (ADR-0008): fuera del menú colapsable, para que se vea también en el celular */}
+        {props.isAuthenticated && <IndicadorPendientes />}
         <Navbar.Collapse id="header-tabs">
           <Nav className="ms-auto">
             <Home />

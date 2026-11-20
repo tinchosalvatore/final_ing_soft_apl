@@ -59,6 +59,8 @@ public class SecurityConfiguration {
                 authz
                     .requestMatchers("/index.html", "/*.js", "/*.txt", "/*.json", "/*.map", "/*.css").permitAll()
                     .requestMatchers("/*.ico", "/*.png", "/*.svg", "/*.webapp").permitAll()
+                    // Spec 003 (ADR-0008): manifest de la PWA que genera vite-plugin-pwa
+                    .requestMatchers("/*.webmanifest").permitAll()
                     .requestMatchers("/assets/**").permitAll()
                     .requestMatchers("/swagger-ui/**").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/authenticate").permitAll()
