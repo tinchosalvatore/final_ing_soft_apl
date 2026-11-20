@@ -4,6 +4,7 @@ import com.trackergastos.config.Constants;
 import com.trackergastos.domain.Authority;
 import com.trackergastos.domain.User;
 import com.trackergastos.repository.AuthorityRepository;
+import com.trackergastos.repository.GastoRepository;
 import com.trackergastos.repository.UserRepository;
 import com.trackergastos.security.AuthoritiesConstants;
 import com.trackergastos.security.SecurityUtils;
@@ -39,6 +40,8 @@ public class UserService {
 
     private final AuthorityRepository authorityRepository;
 
+    private final GastoRepository gastoRepository;
+
     /** Spec 001, regla 16: en prod no hay registro público ({@code application.registro.habilitado}). */
     private final boolean registroHabilitado;
 
@@ -46,11 +49,13 @@ public class UserService {
         UserRepository userRepository,
         PasswordEncoder passwordEncoder,
         AuthorityRepository authorityRepository,
+        GastoRepository gastoRepository,
         @Value("${application.registro.habilitado:true}") boolean registroHabilitado
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authorityRepository = authorityRepository;
+        this.gastoRepository = gastoRepository;
         this.registroHabilitado = registroHabilitado;
     }
 
@@ -210,6 +215,10 @@ public class UserService {
     }
 
     public void deleteUser(String login) {
+        // 001-CA17: un usuario con gastos no se borra (perdería sus datos financieros); se rechaza y no se toca nada
+        if (gastoRepository.exists(GastoSpecifications.delDueno(login))) {
+            throw new ReglaDeNegocioException("usuario", "usuariocongastos", "No se puede borrar un usuario que tiene gastos");
+        }
         userRepository.findOneByLogin(login).ifPresent(user -> {
             userRepository.delete(user);
             LOG.debug("Deleted User: {}", user);

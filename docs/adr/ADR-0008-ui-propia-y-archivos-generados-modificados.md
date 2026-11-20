@@ -25,6 +25,8 @@
 | `web/rest/errors/ExceptionTranslator.java`, `service/UserService.java`, `config/ApplicationProperties.java` | Traducción de las excepciones de negocio, registro deshabilitado (regla 16), propiedad `application.registro.habilitado` | `n` y reaplicar |
 
   Los archivos de ADR-0007 (`GastoService`, `GastoQueryService`, `GastoResource`, `CategoriaService`, `CategoriaResource`) siguen esa misma regla: `n` o `i`.
+- **El "omitir al regenerar" se hace con `.yo-resolve`** (en la raíz; agregado en `fix/001-patch`). Yeoman lee una línea `<ruta> skip` por archivo y lo omite sin preguntar. **Solo se usa para territorio del desarrollador**, es decir, archivos que generó JHipster y que reescribimos: los cinco del ADR-0007, `CategoriaRepository.java`, `GastoResourceIT.java`, `CategoriaResourceIT.java`, `header.spec.tsx`, `e2e/entity/gasto.pw.ts` y `e2e/entity/categoria.pw.ts`.
+- **Nunca se usa para territorio compartido** (`header.tsx`, `routes.tsx`, `ExceptionTranslator.java`, `UserService.java`, `ApplicationProperties.java`, los `application-*.yml`, `config/liquibase/master.xml`). Ahí se respetan los needles: nuestros cambios van arriba del needle y JHipster agrega lo suyo debajo. Ante un conflicto al regenerar se responde `d` (ver el diff) y se fusiona a mano. Si `master.xml` se omitiera, JHipster dejaría de incluir en silencio los changelogs de entidades nuevas.
 - **Mensajes de error de negocio** (`error.nombreduplicado`, `error.categoriaenuso`): van en `src/main/webapp/i18n/es/reglas.json`. Es un archivo propio, que el `deepmerge` de `i18n/es/es.js` junta con los generados.
 
 ## Consecuencias

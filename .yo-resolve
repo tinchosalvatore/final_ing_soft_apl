@@ -1,0 +1,20 @@
+# Archivos que JHipster generó y que reescribimos a mano: al regenerar, Yeoman los omite sin preguntar ("skip").
+# Regla (ADR-0008): SOLO territorio del desarrollador. Nunca territorio compartido (yml, master.xml, header, routes,
+# ExceptionTranslator, UserService, ApplicationProperties): ahí se respetan los needles y, ante un conflicto,
+# se responde "d" (ver el diff) y se fusiona a mano.
+# Formato (@yeoman/conflicter): "<glob relativo a esta carpeta> [estado]"; el estado por defecto es skip.
+
+# ADR-0007: reglas de negocio y control de acceso (spec 001)
+src/main/java/com/trackergastos/service/GastoService.java skip
+src/main/java/com/trackergastos/service/GastoQueryService.java skip
+src/main/java/com/trackergastos/web/rest/GastoResource.java skip
+src/main/java/com/trackergastos/service/CategoriaService.java skip
+src/main/java/com/trackergastos/web/rest/CategoriaResource.java skip
+
+# ADR-0008: repositorio con consulta propia y tests generados que se ajustaron a la spec 001
+src/main/java/com/trackergastos/repository/CategoriaRepository.java skip
+src/test/java/com/trackergastos/web/rest/GastoResourceIT.java skip
+src/test/java/com/trackergastos/web/rest/CategoriaResourceIT.java skip
+src/main/webapp/app/shared/layout/header/header.spec.tsx skip
+src/test/javascript/playwright/e2e/entity/gasto.pw.ts skip
+src/test/javascript/playwright/e2e/entity/categoria.pw.ts skip

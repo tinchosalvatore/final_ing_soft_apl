@@ -43,6 +43,9 @@ public class GastoService {
 
     private static final int DECIMALES_MAXIMOS = 2;
 
+    /** Spec 001, regla 2: descripción opcional de hasta 140 caracteres. */
+    static final int DESCRIPCION_MAXIMA = 140;
+
     private final GastoRepository gastoRepository;
 
     private final CategoriaRepository categoriaRepository;
@@ -67,7 +70,7 @@ public class GastoService {
      * Registra un gasto del usuario autenticado (001-CA01). El dueño del DTO se ignora (001-CA04, S3).
      */
     public GastoDTO save(GastoDTO gastoDTO) {
-        Categoria categoria = validar(gastoDTO.getMonto(), gastoDTO.getFecha(), idCategoria(gastoDTO));
+        Categoria categoria = validar(gastoDTO.getMonto(), gastoDTO.getFecha(), idCategoria(gastoDTO), gastoDTO.getDescripcion());
         Gasto gasto = new Gasto().monto(gastoDTO.getMonto()).fecha(gastoDTO.getFecha()).descripcion(gastoDTO.getDescripcion());
         gasto.setCategoria(categoria);
         gasto.setUser(usuarioActual());
@@ -83,7 +86,7 @@ public class GastoService {
      */
     public Optional<GastoDTO> update(GastoDTO gastoDTO) {
         return buscarPropio(gastoDTO.getId()).map(gasto -> {
-            Categoria categoria = validar(gastoDTO.getMonto(), gastoDTO.getFecha(), idCategoria(gastoDTO));
+            Categoria categoria = validar(gastoDTO.getMonto(), gastoDTO.getFecha(), idCategoria(gastoDTO), gastoDTO.getDescripcion());
             gasto.setMonto(gastoDTO.getMonto());
             gasto.setFecha(gastoDTO.getFecha());
             gasto.setDescripcion(gastoDTO.getDescripcion());
@@ -104,13 +107,13 @@ public class GastoService {
             BigDecimal monto = gastoDTO.getMonto() != null ? gastoDTO.getMonto() : gasto.getMonto();
             LocalDate fecha = gastoDTO.getFecha() != null ? gastoDTO.getFecha() : gasto.getFecha();
             Long idCategoria = gastoDTO.getCategoria() != null ? gastoDTO.getCategoria().getId() : gasto.getCategoria().getId();
-            Categoria categoria = validar(monto, fecha, idCategoria);
+            String descripcion = gastoDTO.getDescripcion() != null ? gastoDTO.getDescripcion() : gasto.getDescripcion();
+            // O1 del verify: el PATCH no pasa por @Valid, así que el largo de la descripción también lo valida el service
+            Categoria categoria = validar(monto, fecha, idCategoria, descripcion);
             gasto.setMonto(monto);
             gasto.setFecha(fecha);
             gasto.setCategoria(categoria);
-            if (gastoDTO.getDescripcion() != null) {
-                gasto.setDescripcion(gastoDTO.getDescripcion());
-            }
+            gasto.setDescripcion(descripcion);
             LOG.debug("Gasto actualizado parcialmente: id={}", gasto.getId());
             return gastoMapper.toDto(gastoRepository.save(gasto));
         });
@@ -162,7 +165,7 @@ public class GastoService {
     /**
      * Reglas de un gasto válido (spec 001, regla 2; criterios 001-CA02 y CA03). Devuelve la categoría ya resuelta.
      */
-    private Categoria validar(BigDecimal monto, LocalDate fecha, Long idCategoria) {
+    private Categoria validar(BigDecimal monto, LocalDate fecha, Long idCategoria, String descripcion) {
         if (monto == null) {
             throw new CampoInvalidoException(ENTIDAD, "monto", "El monto es obligatorio");
         }
@@ -180,6 +183,9 @@ public class GastoService {
         }
         if (fecha.isAfter(hoy())) {
             throw new CampoInvalidoException(ENTIDAD, "fecha", "La fecha no puede ser posterior a hoy");
+        }
+        if (descripcion != null && descripcion.length() > DESCRIPCION_MAXIMA) {
+            throw new CampoInvalidoException(ENTIDAD, "descripcion", "La descripción puede tener como máximo 140 caracteres");
         }
         if (idCategoria == null) {
             throw new CampoInvalidoException(ENTIDAD, "categoria", "La categoría es obligatoria");
