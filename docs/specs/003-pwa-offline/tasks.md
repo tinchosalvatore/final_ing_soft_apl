@@ -48,20 +48,22 @@ Todos fallan por la ausencia de la PWA (motivo de la spec), no por errores de lo
 | T5 | Pendientes en IndexedDB (`idb`), sincronización con axios propio (un 401 no pasa por el interceptor de logout), detección de conexión | CA04 a CA08 | hecho |
 | T6 | "Mis gastos" y "Resumen" sin conexión: aviso, "no disponible", pendientes y rechazados, Editar/Borrar deshabilitados | CA03 a CA06 | hecho |
 | T7 | Cierre de sesión con aviso y limpieza; caché borrada cuando entra otro usuario | CA09, CA10 | hecho |
-| T8 | Tests unitarios propios: `pwa.config.spec.ts`, `pendientes.repositorio.spec.ts`, `sincronizacion.spec.ts` (15 tests) | CA01 a CA10 | hecho |
+| T8 | Tests unitarios propios: `pwa.config.spec.ts`, `pendientes.repositorio.spec.ts`, `sincronizacion.spec.ts`, `limpieza.spec.ts` (17 tests) | CA01 a CA10 | hecho |
 | T9 | `ci:frontend:test`, `ci:backend:test` y la suite E2E completa contra el jar de prod | todos | hecho (ver abajo) |
 
 ### Tests de la fase roja corregidos (el agente testing estaba apagado)
 | Test | Problema | Corrección |
 |---|---|---|
 | 003-CA01 | `navigator.serviceWorker.ready` resuelve con el SW en `activating`; leer `state` una sola vez era una carrera | `expect.poll` hasta `activated` |
-| 003-CA09 (aviso de 1 pendiente) | Después de "Cerrar sesión igual" el logout recarga la página en `/`; el `evaluate` de IndexedDB se cortaba por la navegación | `page.waitForURL` a `/` antes de inspeccionar |
+| 003-CA09 (aviso de 1 pendiente) | Después de "Cerrar sesión igual" el logout recarga la página en `/`; el `evaluate` de IndexedDB se cortaba por la navegación | Las consultas a IndexedDB y Cache Storage se reintentan con `expect.poll` mientras la página navega (`waitForURL` también fallaba con `ERR_ABORTED`, porque el logout navega dos veces) |
 
 ### Evidencia de la fase verde
 ```
-npm run ci:frontend:test        → Test Files 24 passed, Tests 202 passed
+npm run ci:frontend:test        → Test Files 25 passed, Tests 204 passed
 npm run ci:backend:test         → Tests run: 241, Failures: 0, Errors: 0 — BUILD SUCCESS
 npx playwright test --project=chromium --retries=0   (jar e2e de prod, suite completa)
   1 skipped      ← administration.pw.ts, ya estaba omitido
   73 passed (1.5m)
 ```
+
+Después de la revisión de seguridad automática del PR (caché de `/api/account` sin token): al abrir la app sin token se borra `api-v1` antes de pedir la sesión (`borrarCacheSiNoHaySesion`). Suite E2E completa otra vez: 73 passed, 1 skipped; la 003 sola, 3 corridas seguidas de 15 passed.

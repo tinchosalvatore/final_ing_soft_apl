@@ -266,11 +266,10 @@ test.describe('003 PWA y carga sin conexión', () => {
     await jhi.navbar.clickOnLogoutItem();
     await expect(page.getByText('Tenés 1 gasto sin sincronizar. Si cerrás sesión se va a perder.')).toBeVisible();
     await page.getByRole('button', { name: 'Cerrar sesión igual' }).click();
-    // El logout termina recargando la página en "/": se espera a que cargue antes de inspeccionar el navegador.
-    await page.waitForURL(url => url.pathname === '/');
-
-    await expect.poll(() => respuestasEnCache(page)).toBe(0);
-    await expect.poll(() => contarPendientes(page)).toBe(0);
+    // El logout recarga la página: mientras navega, `evaluate` falla. Se reintenta hasta que la página quede quieta.
+    const reintentando = (consulta: () => Promise<number>) => () => consulta().catch(() => -1);
+    await expect.poll(reintentando(() => respuestasEnCache(page))).toBe(0);
+    await expect.poll(reintentando(() => contarPendientes(page))).toBe(0);
   });
 
   test('003-CA09 logout con pendientes: "Cancelar" no cierra la sesión ni borra nada', async ({ page, context, jhi }) => {

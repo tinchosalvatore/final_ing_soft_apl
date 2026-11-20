@@ -1,4 +1,8 @@
+import { Storage } from 'react-jhipster';
+
 import axios from 'axios';
+
+import { AUTHENTICATION_TOKEN_KEY } from 'app/shared/jhipster/constants';
 
 import { CACHE_API } from 'app/pwa/pwa.config';
 
@@ -29,4 +33,14 @@ export const alIniciarSesion = async (login: string): Promise<void> => {
   await borrarCacheApi();
   localStorage.setItem(ULTIMO_LOGIN, login);
   await axios.get('api/account').catch(() => undefined);
+};
+
+/**
+ * Al abrir la app: si no hay token (la sesión se perdió sin cerrar sesión, por ejemplo al cerrar el navegador con un
+ * token de sesión), se borra la caché de la API. Los pendientes no se tocan: esperan el login de su dueño (punto 12).
+ */
+export const borrarCacheSiNoHaySesion = async (): Promise<void> => {
+  if (!Storage.local.get(AUTHENTICATION_TOKEN_KEY) && !Storage.session.get(AUTHENTICATION_TOKEN_KEY)) {
+    await borrarCacheApi();
+  }
 };

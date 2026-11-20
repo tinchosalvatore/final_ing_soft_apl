@@ -17,6 +17,7 @@ import Footer from 'app/shared/layout/footer/footer';
 import Header from 'app/shared/layout/header/header';
 import { getProfile } from 'app/shared/reducers/application-profile';
 import { getSession } from 'app/shared/reducers/authentication';
+import { borrarCacheSiNoHaySesion } from 'app/shared/offline/limpieza';
 import SincronizacionOffline from 'app/shared/offline/sincronizacion-offline';
 
 const baseHref = document.querySelector('base')!.getAttribute('href')!.replace(/\/$/, '');
@@ -25,7 +26,9 @@ export const App = () => {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    dispatch(getSession());
+    // Spec 003, punto 15 (ADR-0008): sin token no hay sesión, así que antes de pedirla se borran los datos guardados.
+    // Si no, la `/api/account` guardada haría pasar por logueado a quien abra la app sin red.
+    void borrarCacheSiNoHaySesion().finally(() => dispatch(getSession()));
     dispatch(getProfile());
   }, []);
 
