@@ -42,6 +42,9 @@ Además del objetivo de producto hay un objetivo de seguridad: **los gastos son 
 12. **No se puede borrar una categoría que tiene gastos asociados.** El sistema lo rechaza con un mensaje que explica el motivo.
 13. El sistema arranca con estas categorías cargadas: Supermercado, Transporte, Servicios, Salud, Ocio, Otros.
 
+### Cuentas
+16. **En producción no hay registro público.** Las cuentas las crea un `ADMIN` desde la administración de usuarios. Un intento de registrarse se rechaza y **no crea, modifica ni borra ningún usuario** (en particular, no reemplaza una cuenta desactivada). En los entornos de desarrollo y de pruebas el registro sigue disponible. *(Decisión del humano a partir del verify del paso 000, riesgo R1 de `seguridad.md`.)*
+
 ### Interfaz
 14. El menú principal tiene "Mis gastos" (listado con filtros y botón para nuevo gasto). La gestión de categorías aparece solo para `ADMIN`.
 15. Los errores de validación se muestran junto al campo correspondiente, en español, y no se pierde lo que el usuario había escrito.
@@ -76,6 +79,7 @@ Además del objetivo de producto hay un objetivo de seguridad: **los gastos son 
 | 001-CA13 | Borrar categoría en uso | ADMIN borra Supermercado, que tiene gastos | Se rechaza con mensaje explicativo; la categoría sigue existiendo |
 | 001-CA14 | Categorías iniciales | Sistema recién instalado | Existen las 6 categorías del punto 13 |
 | 001-CA15 | Flujo E2E | En el navegador, `user` inicia sesión, carga un gasto, lo ve en "Mis gastos", lo edita y lo borra | Cada paso se refleja en pantalla |
+| 001-CA16 | Registro deshabilitado | Con el registro deshabilitado (como en producción), alguien sin sesión intenta registrarse con el login de una cuenta desactivada existente | Se rechaza; la cuenta original sigue existiendo con los mismos datos y no se crea ninguna |
 
 ## 5.1 Contrato observable (para escribir los tests)
 No describe *cómo* se implementa: fija lo que un test puede observar desde afuera (API y textos de la interfaz), para que el agente testing no tenga que inventarlo. Se agregó a pedido del agente testing durante la fase roja.
@@ -89,6 +93,7 @@ No describe *cómo* se implementa: fija lo que un test puede observar desde afue
 | Gasto ajeno o inexistente en GET, PUT, PATCH o DELETE (001-CA07, CA08) | **404** en todos los casos, también para un id inexistente. El cuerpo es igual en los dos casos, salvo los campos que contienen el id o la ruta (`instance`, `path`) |
 | Sin sesión (001-CA10) | **401** |
 | USER que escribe categorías (001-CA11) | **403** |
+| Registro con el registro deshabilitado (001-CA16) | **401** |
 | Conteo de gastos (`/api/gastos/count`, que genera JHipster) | Cuenta **solo los gastos del usuario autenticado**, con los mismos filtros. Si no, revela cuántos gastos tienen los demás (A01) |
 | Respuesta de crear o editar un gasto | Incluye el `user.login` del dueño (sin otros datos del usuario) |
 | Orden del listado (punto 4) | El backend **impone siempre** fecha descendente y después id descendente. Si el cliente manda otro `sort`, se ignora |
