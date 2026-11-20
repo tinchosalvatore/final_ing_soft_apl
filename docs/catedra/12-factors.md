@@ -29,6 +29,7 @@ Responsable: el implementador de cada spec (es transversal), y el verificador lo
 | `TRACKER_ADMIN_PASSWORD_HASH` | Hash BCrypt de la contraseña de `admin` en prod (S5). Es un hash, no la contraseña en claro. Cambiarla rota la contraseña en el próximo arranque (R2 de `seguridad.md`) | `.env` |
 | `SPRING_MAIL_HOST` | Servidor de mail (hoy fijo en el yml de prod, lo pasa a variable el coder) | `.env` |
 | `JHIPSTER_LOGGING_LOGSTASH_ENABLED`, `JHIPSTER_LOGGING_LOGSTASH_HOST`, `JHIPSTER_LOGGING_LOGSTASH_PORT` | Envío de logs | `.env` / `app.yml` |
+| `SPRING_MAIL_HOST` | Servidor SMTP (mails de activación y recuperación). No es crítico: sin servidor la app arranca | opcional (default `localhost`) |
 | `SERVER_PORT` | Puerto HTTP | opcional |
 | `SPRING_PROFILES_ACTIVE` | `prod` / `dev` | `app.yml` |
 

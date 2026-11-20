@@ -46,7 +46,8 @@ spring:
       # S5: hash BCrypt de la contraseña de admin. Sin la variable, prod no arranca.
       adminPasswordHash: ${TRACKER_ADMIN_PASSWORD_HASH:${samples.admin-password-hash}}
   mail:
-    host: localhost
+    # Factor III (O6 del verify del 000): el servidor de mail se configura por entorno. No es crítico: sin servidor la app arranca.
+    host: ${SPRING_MAIL_HOST:localhost}
     port: 25
   thymeleaf:
     cache: true
