@@ -33,18 +33,26 @@ spring:
       enabled: false
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
-    url: jdbc:postgresql://localhost:5432/trackerGastos
+    # Factor III: sin URL en el yml. Viene de SPRING_DATASOURCE_URL; el fallback solo existe con el perfil secret-samples.
+    url: ${SPRING_DATASOURCE_URL:${samples.datasource-url}}
     hikari:
       poolName: Hikari
       auto-commit: false
   # Replace by 'prod, faker' to add the faker context and have sample data loaded in production
   liquibase:
-    contexts: prod
+    # El perfil secret-samples agrega su contexto para excluir el changeset de S5 (ver docs/specs/000-base/plan.md)
+    contexts: ${samples.liquibase-contexts:prod}
+    parameters:
+      # S5: hash BCrypt de la contraseña de admin. Sin la variable, prod no arranca.
+      adminPasswordHash: ${TRACKER_ADMIN_PASSWORD_HASH:${samples.admin-password-hash}}
   mail:
     host: localhost
     port: 25
   thymeleaf:
     cache: true
+  lifecycle:
+    # Factor IX: tiempo máximo para terminar las peticiones en curso al apagar
+    timeout-per-shutdown-phase: 20s
 
 # ===================================================================
 # To enable TLS in production, generate a certificate using:
@@ -66,7 +74,7 @@ spring:
 #     ciphers: TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 ,TLS_DHE_RSA_WITH_AES_128_GCM_SHA256 ,TLS_DHE_RSA_WITH_AES_256_GCM_SHA384 ,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,TLS_DHE_RSA_WITH_AES_128_CBC_SHA,TLS_DHE_RSA_WITH_AES_256_CBC_SHA256,TLS_DHE_RSA_WITH_AES_256_CBC_SHA,TLS_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_256_GCM_SHA384,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_RSA_WITH_AES_256_CBC_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA,TLS_RSA_WITH_CAMELLIA_256_CBC_SHA,TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA,TLS_RSA_WITH_CAMELLIA_128_CBC_SHA
 # ===================================================================
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
   shutdown: graceful # see https://docs.spring.io/spring-boot/reference/web/graceful-shutdown.html#web.graceful-shutdown
   compression:
     enabled: true
