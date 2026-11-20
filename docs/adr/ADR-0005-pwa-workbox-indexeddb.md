@@ -32,6 +32,8 @@
 - Como la sincronización la controla la app, un pendiente nunca se pierde por un token vencido. Contra: solo sincroniza con la app abierta.
 - `NetworkFirst` sobre la API es un riesgo de privacidad en dispositivos compartidos, por eso es obligatorio limpiar al cerrar sesión.
 
+- **Limitación aceptada:** con "Recordarme" y el JWT vencido, sin red se ven la cuenta y los datos guardados. Se considera que "Recordarme" significa un dispositivo de confianza (L1 en `seguridad.md`).
+
 ## Alternativas
 - **Service worker escrito a mano (JS puro o `injectManifest` con un `sw.ts` propio):** es lo que la cátedra pidió no hacer. Descartado.
 - **`workbox-background-sync` (cola en el service worker):** reenvía la petición original con el token viejo. Si el token venció, el servidor responde 401, Workbox lo da por enviado y el gasto se pierde. Descartado.
