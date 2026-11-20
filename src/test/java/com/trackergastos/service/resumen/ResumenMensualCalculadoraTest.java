@@ -179,6 +179,21 @@ class ResumenMensualCalculadoraTest {
     }
 
     @Test
+    @DisplayName("002-CA09 empate: orden alfabético del español sin distinguir mayúsculas ni acentos")
+    void ca09EmpateOrdenEspanol() {
+        // Con orden por código Unicode quedaría "Peluquería", "almacén", "Óptica" (mayúsculas antes, Ó al final).
+        List<GastoDTO> gastos = List.of(
+            gasto("100", "2026-10-01", "Peluquería"),
+            gasto("100", "2026-10-02", "Óptica"),
+            gasto("100", "2026-10-03", "almacén")
+        );
+
+        ResumenMensualDTO r = calculadora.calcular(YearMonth.of(2026, 10), gastos);
+
+        assertThat(r.getCategorias()).extracting(CategoriaResumenDTO::getNombre).containsExactly("almacén", "Óptica", "Peluquería");
+    }
+
+    @Test
     @DisplayName("002-borde mes sin gastos con mes anterior con gastos: total 0 y variación -100 %")
     void bordeMesSinGastos() {
         List<GastoDTO> gastos = List.of(gasto("400", "2026-09-10", "Ocio"));

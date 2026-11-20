@@ -117,3 +117,25 @@ Plan: `plan.md` (aprobado por el documentador). Esta rama integra `spec/001-gast
 - Los tests de integración crean los usuarios `ana` y `beto` y buscan las categorías por nombre o las crean, así funcionan antes y después de que se carguen las categorías iniciales de la 001.
 - El E2E del CA12 crea un usuario nuevo por API, así puede afirmar valores exactos. Necesita que `/api/register` y la activación por `PUT /api/admin/users/{login}` sigan andando.
 - Los E2E de la 002 asumen que existen "Mis gastos" y las categorías iniciales de la 001.
+
+## Fase roja de `fix/002-orden` (agente testing)
+
+| Archivo | Test | Criterio | En `main` |
+|---|---|---|---|
+| `service/resumen/ResumenMensualCalculadoraTest.java` | `002-CA09 empate: orden alfabético del español sin distinguir mayúsculas ni acentos` | CA09 | **rojo**: `["Peluquería", "almacén", "Óptica"]` en vez de `["almacén", "Óptica", "Peluquería"]` (orden por código Unicode) |
+| `webapp/app/modules/resumen/resumen.spec.tsx` (Vitest) | `002-CA10 "Mes anterior" se deshabilita en 2000-01` | punto 6 | **rojo**: `expected false to be true` (el botón no se deshabilita) |
+| | `002-CA10 control: "Mes anterior" está habilitado en un mes posterior a 2000-01` | punto 6 | pasa (control) |
+
+El Vitest fija la fecha con `vi.setSystemTime` (2000-02-15) y mockea `cargarConCache`: solo prueba el selector de mes.
+
+## fix/002-orden: fase verde (agente coder, 2026-11-20)
+
+| # | Cambio | Test | Estado |
+|---|---|---|---|
+| F1 | Desempate por nombre con `Collator` es-AR de fuerza PRIMARY (orden del español, sin distinguir mayúsculas ni acentos), en vez de `String.compareTo` | `ResumenMensualCalculadoraTest.ca09EmpateOrdenEspanol` | hecha |
+| F2 | "Mes anterior" deshabilitado en `2000-01` (`PRIMER_MES` en `resumen.reglas.ts`) | `resumen.spec.tsx` | hecha |
+
+Evidencia:
+- `npm run ci:backend:test`: 79 unit y 241 IT, en verde.
+- `npm run ci:frontend:test`: build prod y 206 Vitest, en verde.
+- Sin E2E, porque los estaba usando el agente testing (regla 13).
