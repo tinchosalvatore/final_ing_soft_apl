@@ -1,0 +1,16 @@
+# Falsos positivos de Gitleaks (docs/catedra/ci.md §2.5). Nunca desactivar la herramienta entera.
+#
+# Secreto JWT de muestra que genera JHipster 9.4. No se usa en prod real: el perfil prod exige
+# JHIPSTER_SECURITY_AUTHENTICATION_JWT_BASE64_SECRET por variable de entorno (seguridad.md S6).
+# Fingerprint sin commit (archivo:regla:línea) para que siga valiendo después de un squash/rebase.
+# Si alguno de estos archivos cambia y la línea se mueve, actualizar el número.
+
+# Configuración del generador (no se carga en runtime)
+.yo-rc.json:generic-api-key:16
+# Compose de demo de JHipster Control Center
+src/main/docker/jhipster-control-center.yml:generic-api-key:45
+# Perfil secret-samples: solo CI/E2E y compose de demo
+src/main/resources/config/application-secret-samples.yml:generic-api-key:23
+# Configuración de los tests
+src/test/resources/config/application.yml:generic-api-key:79
+src/test/java/com/trackergastos/security/jwt/AuthenticationIntegrationTest.java:generic-api-key:19

@@ -13,7 +13,7 @@
 | 6 | Factores III, VII, IX en `application-prod.yml` + `.env.example` | paso 6 | hecha | ver PR |
 | 7 | S5: changelog `context="prod and !secret-samples"` (con precondición BCrypt) + claves `samples.*` en `application-secret-samples.yml` | S5 | hecha | ver PR |
 | 8 | Verificar con dos corridas contra Postgres: con contexts `prod, secret-samples` el changeset NO corre; con solo `prod` SÍ corre (user desactivado, admin con el hash del entorno). Evidencia acá abajo | S5 | hecha | — |
-| 9 | Push y PR a `main` (con confirmación del humano) | paso 7 | pendiente | |
+| 9 | Push y PR a `main` (con confirmación del humano) | paso 7 | en curso: PR #1 abierto. Primer run rojo en Gitleaks (5 hallazgos, todos el secreto JWT de muestra de JHipster) → `.gitleaksignore` | |
 
 ## Evidencia de la tarea 8 (2026-11-20)
 
