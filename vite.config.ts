@@ -6,7 +6,7 @@ import { defineConfig, normalizePath } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { VitePWA } from 'vite-plugin-pwa';
 
-import { pwaConfig } from './src/main/webapp/app/pwa/pwa.config';
+import { pwaConfig } from './src/main/webapp/app/pwa/pwa.config.ts';
 
 const { getAbsoluteFSPath } = await import('swagger-ui-dist');
 const swaggerUiPath = getAbsoluteFSPath();
@@ -22,6 +22,13 @@ const config = defineConfig({
     VitePWA({ ...pwaConfig, disable: development }),
     viteStaticCopy({
       targets: [
+        // Spec 003: íconos del manifest de la PWA, en la raíz del sitio.
+        {
+          src: normalizePath(fileURLToPath(new URL('./src/main/webapp/content/images/pwa/*.png', import.meta.url))),
+          dest: '.',
+          // El plugin conserva las carpetas (content/images/pwa): se suben tres niveles para dejarlos en la raíz.
+          rename: (name, ext) => `../../../${name}.${ext}`,
+        },
         {
           src: [
             `${normalizePath(swaggerUiPath)}/*.{js,css,html,png}`,

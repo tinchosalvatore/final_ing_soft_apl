@@ -13,7 +13,7 @@ import { type Pendiente, actualizarPendiente, borrarPendiente, listarPendientes 
  * Usa una instancia de axios PROPIA: la global tiene el interceptor de JHipster que, ante un 401, limpia la sesión.
  * Un 401 acá significa "sesión vencida" y el pendiente tiene que quedar en IndexedDB hasta el próximo login (§5.1).
  */
-const cliente = axios.create({ baseURL: SERVER_API_URL, timeout: 60_000 });
+export const clienteSincronizacion = axios.create({ baseURL: SERVER_API_URL, timeout: 60_000 });
 
 interface Problem {
   fieldErrors?: { message?: string }[];
@@ -27,13 +27,27 @@ export const motivoDelRechazo = (problem: Problem | undefined): string =>
 
 const tokenActual = (): string | undefined => Storage.local.get(AUTHENTICATION_TOKEN_KEY) || Storage.session.get(AUTHENTICATION_TOKEN_KEY);
 
+/**
+ * Dueño del token según su claim `sub` (el login, en JHipster). No verifica la firma: eso lo hace el backend. Sirve para
+ * no enviar los pendientes de un usuario con el token de otro (por ejemplo, si otro inició sesión en otra pestaña).
+ */
+export const loginDelToken = (token: string): string | undefined => {
+  try {
+    const carga = token.split('.')[1].replaceAll('-', '+').replaceAll('_', '/');
+    const { sub } = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(carga), c => c.charCodeAt(0)))) as { sub?: string };
+    return sub;
+  } catch {
+    return undefined;
+  }
+};
+
 export type ResultadoEnvio = 'aceptado' | 'rechazado' | 'reintentar-despues';
 
 /** Envía un pendiente. 2xx → se borra; 400 → rechazado con el motivo; 401, error de red u otro → queda pendiente. */
 export const enviarPendiente = async (pendiente: Pendiente, token: string): Promise<ResultadoEnvio> => {
   const { monto, fecha, descripcion, categoria } = pendiente.gasto;
   try {
-    await cliente.post(
+    await clienteSincronizacion.post(
       'api/gastos',
       { monto, fecha, descripcion, categoria: { id: categoria.id } },
       { headers: { Authorization: `Bearer ${token}` } },
@@ -53,7 +67,10 @@ let enCurso: Promise<void> | null = null;
 
 const ejecutar = async (login: string): Promise<void> => {
   const token = tokenActual();
-  if (!token) return;
+  // Sin token, o con un token que no es del usuario: no se envía nada (punto 15). Un token ilegible (por ejemplo,
+  // vencido o corrupto) se deja pasar: el backend responde 401 y el pendiente queda para después del login (punto 12).
+  const dueno = token ? loginDelToken(token) : undefined;
+  if (!token || (dueno !== undefined && dueno !== login)) return;
   for (const pendiente of await listarPendientes(login)) {
     if (pendiente.estado !== 'pendiente') continue;
     // Un rechazo no frena a los siguientes (caso borde de la spec); un 401 o un corte de red, sí.

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import { CACHE_API } from 'app/pwa/nombres';
+import { CACHE_API } from 'app/pwa/pwa.config';
 
 import { borrarPendientesDe } from './pendientes.repositorio';
 
