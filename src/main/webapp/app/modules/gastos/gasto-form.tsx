@@ -7,7 +7,7 @@ import axios from 'axios';
 import { ICategoria } from 'app/shared/model/categoria.model';
 
 import { guardarGasto, listarCategorias, obtenerGasto } from './gastos.api';
-import { ErroresGasto, ValoresGasto, erroresDelBackend, hoyArgentina, normalizarMonto, validarGasto } from './gastos.logica';
+import { ErroresGasto, ValoresGasto, erroresDelBackend, hoyArgentina, normalizarMonto, validarGasto } from './gastos.reglas';
 import { TEXTOS } from './textos';
 
 const VACIO: ValoresGasto = { monto: '', fecha: '', categoriaId: '', descripcion: '' };

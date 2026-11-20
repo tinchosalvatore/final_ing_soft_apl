@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router';
 import { ICategoria } from 'app/shared/model/categoria.model';
 
 import { FiltroGastos, GastoApi, TAMANIO_PAGINA, borrarGasto, listarCategorias, listarGastos } from './gastos.api';
-import { formatearFecha, formatearMonto } from './gastos.logica';
+import { formatearFecha, formatearMonto } from './gastos.reglas';
 import GastoBorrarDialog from './gasto-borrar-dialog';
 import { TEXTOS } from './textos';
 
