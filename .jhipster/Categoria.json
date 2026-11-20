@@ -1,0 +1,21 @@
+{
+  "annotations": {
+    "changelogDate": "20231212115038"
+  },
+  "applications": ["trackerGastos"],
+  "documentation": "Rubro que agrupa gastos (ej: Supermercado, Transporte). Las administra un ADMIN y las usan todos.",
+  "dto": "mapstruct",
+  "fields": [
+    {
+      "fieldName": "nombre",
+      "fieldType": "String",
+      "fieldValidateRules": ["required", "minlength", "maxlength", "unique"],
+      "fieldValidateRulesMaxlength": "40",
+      "fieldValidateRulesMinlength": "2"
+    }
+  ],
+  "name": "Categoria",
+  "relationships": [],
+  "searchEngine": "no",
+  "service": "serviceClass"
+}
