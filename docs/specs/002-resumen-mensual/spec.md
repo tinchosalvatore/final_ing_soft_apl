@@ -60,7 +60,39 @@ Es la lógica de negocio propia del proyecto (no la genera JHipster), y por eso 
 | 002-CA09 | Empate de categorías | Ocio 300 y Salud 300 | Ocio antes que Salud |
 | 002-CA10 | Mes inválido | `2099-01`, `1999-12`, `2026-13`, `abc` | Error de validación en todos los casos |
 | 002-CA11 | Mes por defecto | Pedido sin mes | Resumen del mes actual |
-| 002-CA12 | Flujo E2E | `user` carga 2 gastos de categorías distintas y abre "Resumen" | Ve el total y las 2 categorías con su participación |
+| 002-CA12 | Flujo E2E | Un usuario **nuevo, creado por el propio test** (sin gastos previos), carga 1000 en Supermercado y 500 en Transporte con fecha de hoy y abre "Resumen" | Ve el total `$ 1.500,00`, Supermercado `66,7 %` y Transporte `33,3 %` |
+
+## 5.1 Contrato observable (para escribir los tests)
+No describe *cómo* se implementa: fija lo que un test puede observar desde afuera. Se agregó a pedido del agente testing durante la fase roja.
+
+### API
+| Situación | Respuesta |
+|---|---|
+| Pedir un resumen | `GET /api/resumen?mes=AAAA-MM` (sin `mes`, el mes actual) → **200** con el resumen |
+| Mes inválido (002-CA10) | **400**, *problem* con `message` = `error.mesinvalido` |
+| Sin sesión | **401** |
+
+### Forma del resumen
+| Campo | Significado |
+|---|---|
+| `mes` | `AAAA-MM` |
+| `total` | Total del mes (decimal exacto, 2 decimales) |
+| `cantidad` | Cantidad de gastos del mes |
+| `categorias[]` | `{ nombre, total, cantidad, participacion }`, en el orden del punto 4 |
+| `diferencia` | Total del mes − total del mes anterior (puede ser negativa) |
+| `variacionPorcentual` | Escala 0 a 100 con 1 decimal (`20.0`, no `0.2`). `null` = no informada |
+
+`participacion` usa la misma escala 0 a 100 con 1 decimal (`75.0`).
+
+### Interfaz (textos que usan los E2E)
+| Elemento | Texto |
+|---|---|
+| Menú | "Resumen" |
+| Selector de mes | Botones "Mes anterior" y "Mes siguiente" |
+| Total | `$ 1.500,50` (es-AR) |
+| Participación y variación | `75,0 %`, `+20,0 %`, `-100,0 %` |
+| Sentido de la variación | "Aumento" o "Baja" |
+| Variación no informada | "Sin datos del mes anterior" |
 
 ## 6. Fuera de alcance
 - Presupuestos o límites por categoría y alertas por exceso.
