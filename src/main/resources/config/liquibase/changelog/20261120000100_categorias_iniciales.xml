@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+        Spec 001, regla 13 y criterio 001-CA14: categorías con las que arranca el sistema.
+        Sin contexto: corre en dev, test y prod (factor XII, datos base versionados).
+        Ids de sequence_generator, la misma secuencia que usa Hibernate, para no chocar con los
+        datos faker de dev (ids 1 a 10).
+    -->
+    <changeSet id="20261120000100-1" author="coder">
+        <insert tableName="categoria">
+            <column name="id" valueComputed="nextval('sequence_generator')"/>
+            <column name="nombre" value="Supermercado"/>
+        </insert>
+        <insert tableName="categoria">
+            <column name="id" valueComputed="nextval('sequence_generator')"/>
+            <column name="nombre" value="Transporte"/>
+        </insert>
+        <insert tableName="categoria">
+            <column name="id" valueComputed="nextval('sequence_generator')"/>
+            <column name="nombre" value="Servicios"/>
+        </insert>
+        <insert tableName="categoria">
+            <column name="id" valueComputed="nextval('sequence_generator')"/>
+            <column name="nombre" value="Salud"/>
+        </insert>
+        <insert tableName="categoria">
+            <column name="id" valueComputed="nextval('sequence_generator')"/>
+            <column name="nombre" value="Ocio"/>
+        </insert>
+        <insert tableName="categoria">
+            <column name="id" valueComputed="nextval('sequence_generator')"/>
+            <column name="nombre" value="Otros"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>
