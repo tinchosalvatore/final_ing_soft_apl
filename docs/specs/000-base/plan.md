@@ -1,7 +1,7 @@
 # Plan — Spec 000 (generación base)
 
 - Autor: agente coder (sesión `coder`, 2026-11-20)
-- Estado: Borrador (decisiones §6 revisadas con el documentador; falta la aprobación del humano)
+- Estado: Aprobado por el humano (2026-11-20)
 
 <!-- Lo escribe el implementador ANTES de codear. No se codea hasta que el humano lo apruebe. -->
 
@@ -18,7 +18,7 @@ Para **S5** el mecanismo propuesto es **un changelog nuevo de Liquibase con `con
 | `src/main/resources/config/liquibase/changelog/20261120000000_prod_usuarios_por_defecto.xml` (nuevo) | Compartido | Changeset `context="prod and !secret-samples"`: `UPDATE jhi_user SET activated=false WHERE login='user'` y `UPDATE jhi_user SET password_hash='${adminPasswordHash}' WHERE login='admin'` |
 | `src/main/resources/config/liquibase/master.xml` | Compartido | `include` del changelog nuevo **arriba** del needle `jhipster-needle-liquibase-add-incremental-changelog` (sin tocar el needle) |
 | `src/main/resources/config/application-prod.yml` | Compartido | `spring.liquibase.parameters.adminPasswordHash: ${TRACKER_ADMIN_PASSWORD_HASH}` (sin default: si falta, la app no arranca en prod). `spring.datasource.url: ${SPRING_DATASOURCE_URL}` sin default (saca el `localhost` del yml de prod). `server.port: ${SERVER_PORT:8080}`. `spring.lifecycle.timeout-per-shutdown-phase: 20s` (`server.shutdown: graceful` ya viene generado) |
-| `src/main/resources/config/application-secret-samples.yml` | Compartido | `spring.liquibase.contexts: prod, secret-samples` y `spring.liquibase.parameters.adminPasswordHash` con un valor de muestra. Así el perfil de muestras (CI/E2E y el compose local `app.yml`) **no** aplica S5 y los E2E pueden seguir logueando con `user/user` y `admin/admin` |
+| `src/main/resources/config/application-secret-samples.yml` | Compartido | Claves `samples.*` (URL de la base, `liquibase-contexts: prod, secret-samples` y hash de muestra), que `application-prod.yml` usa como fallback. Así el perfil de muestras (CI/E2E y el compose local `app.yml`) **no** aplica S5, y los E2E siguen logueando con `user/user` y `admin/admin`, sin importar el orden de los perfiles |
 | `.env.example` (nuevo) | Compartido | Todas las variables de `12-factors.md` §2 + `TRACKER_ADMIN_PASSWORD_HASH`, con placeholders y el comando para generar cada valor. Sin valores reales |
 | `docs/catedra/12-factors.md` §2 | (doc) | Sumar `TRACKER_ADMIN_PASSWORD_HASH` a la tabla, como exige la guía. **Lo coordino con el documentador** |
 | `AGENTS.md` §3 | (doc) | Revisado: los scripts generados coinciden con la tabla. Solo cambia si algo de este plan lo requiere |
@@ -49,6 +49,11 @@ Ninguna.
 2. **La variable trae un hash BCrypt, no la contraseña en claro.** Así la contraseña nunca está en texto plano ni en el entorno del contenedor. Se genera con `htpasswd -bnBC 10 "" 'la-contraseña' | tr -d ':\n'` (Spring acepta prefijos `$2a$`/`$2b$`/`$2y$`); el comando queda en `.env.example`.
 3. **Hallazgo de JHipster 9.4 sobre S6:** el secreto JWT de ejemplo ya no está en `application-prod.yml`, sino en un perfil aparte `secret-samples` (`application-secret-samples.yml`), que `src/main/docker/app.yml` y el script `ci:e2e:server:start` activan junto con `prod`. Ese perfil es aceptable para CI/E2E, pero **no** para un despliegue real. Un despliegue real arranca **solo** con `prod` (sin `secret-samples`) y toma los secretos del entorno; si falta alguno, no arranca.
 4. **S5 no se aplica con `secret-samples`.** Los E2E generados (`support/commands.ts`) loguean por defecto con `user/user` y `admin/admin`, y el CI los corre contra el jar con `prod,secret-samples`. Por eso el changeset se excluye cuando está activo el perfil de muestras: ese perfil ya es, por definición, "secretos de ejemplo".
+
+5. **Ajustes durante la implementación**, ya aprobado el plan:
+   - **Claves `samples.*`:** el CI activa los perfiles en el orden `e2e,secret-samples,prod`, y `prod` pisa las claves que comparte con `secret-samples`. Por eso `prod` lee `${VAR:${samples.x}}`, y las claves `samples.*` solo existen en el perfil de muestras.
+   - **Precondición en el changeset:** Spring no falla cuando un placeholder de `spring.liquibase.parameters` queda sin resolver. El changeset tiene una precondición `HALT` que exige un hash BCrypt válido.
+   - **S6:** no requirió cambios. `SecurityJwtConfiguration` lee el secreto con `@Value` sin default, así que prod ya falla si falta la variable.
 
 ## 6. Decisiones pendientes (para el humano)
 
