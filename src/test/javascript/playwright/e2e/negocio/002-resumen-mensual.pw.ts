@@ -35,7 +35,11 @@ test.describe('002 Resumen mensual', () => {
 
     await page.getByRole('link', { name: 'Resumen' }).click();
 
-    await expect(page.getByText('$ 1.500,00')).toBeVisible();
+    // exact: la diferencia contra el mes anterior también muestra el monto, con signo (+$ 1.500,00)
+    await expect(page.getByText('$ 1.500,00', { exact: true })).toBeVisible();
+    // usuario nuevo: el mes anterior está en 0, la diferencia se informa y la variación porcentual no (spec 002 §3.3)
+    await expect(page.getByText('+$ 1.500,00', { exact: true })).toBeVisible();
+    await expect(page.getByText('Sin datos del mes anterior')).toBeVisible();
     const supermercado = page.getByRole('row').filter({ hasText: 'Supermercado' });
     await expect(supermercado).toContainText('66,7 %');
     const transporte = page.getByRole('row').filter({ hasText: 'Transporte' });
