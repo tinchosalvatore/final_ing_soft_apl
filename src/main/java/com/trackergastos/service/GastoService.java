@@ -1,5 +1,7 @@
 package com.trackergastos.service;
 
+import static net.logstash.logback.argument.StructuredArguments.kv;
+
 import com.trackergastos.domain.Categoria;
 import com.trackergastos.domain.Gasto;
 import com.trackergastos.domain.User;
@@ -75,7 +77,7 @@ public class GastoService {
         gasto.setCategoria(categoria);
         gasto.setUser(usuarioActual());
         gasto = gastoRepository.save(gasto);
-        LOG.debug("Gasto creado: id={}", gasto.getId());
+        LOG.info("Gasto creado", kv("evento", "GASTO_CREADO"), kv("gastoId", gasto.getId()));
         return gastoMapper.toDto(gasto);
     }
 
@@ -85,13 +87,13 @@ public class GastoService {
      * @return vacío si el gasto no existe o no es del usuario autenticado (S1).
      */
     public Optional<GastoDTO> update(GastoDTO gastoDTO) {
-        return buscarPropio(gastoDTO.getId()).map(gasto -> {
+        return buscarPropio(gastoDTO.getId(), "editar").map(gasto -> {
             Categoria categoria = validar(gastoDTO.getMonto(), gastoDTO.getFecha(), idCategoria(gastoDTO), gastoDTO.getDescripcion());
             gasto.setMonto(gastoDTO.getMonto());
             gasto.setFecha(gastoDTO.getFecha());
             gasto.setDescripcion(gastoDTO.getDescripcion());
             gasto.setCategoria(categoria);
-            LOG.debug("Gasto actualizado: id={}", gasto.getId());
+            LOG.info("Gasto editado", kv("evento", "GASTO_EDITADO"), kv("gastoId", gasto.getId()));
             return gastoMapper.toDto(gastoRepository.save(gasto));
         });
     }
@@ -103,7 +105,7 @@ public class GastoService {
      * @return vacío si el gasto no existe o no es del usuario autenticado (S1).
      */
     public Optional<GastoDTO> partialUpdate(GastoDTO gastoDTO) {
-        return buscarPropio(gastoDTO.getId()).map(gasto -> {
+        return buscarPropio(gastoDTO.getId(), "editar").map(gasto -> {
             BigDecimal monto = gastoDTO.getMonto() != null ? gastoDTO.getMonto() : gasto.getMonto();
             LocalDate fecha = gastoDTO.getFecha() != null ? gastoDTO.getFecha() : gasto.getFecha();
             Long idCategoria = gastoDTO.getCategoria() != null ? gastoDTO.getCategoria().getId() : gasto.getCategoria().getId();
@@ -114,7 +116,7 @@ public class GastoService {
             gasto.setFecha(fecha);
             gasto.setCategoria(categoria);
             gasto.setDescripcion(descripcion);
-            LOG.debug("Gasto actualizado parcialmente: id={}", gasto.getId());
+            LOG.info("Gasto editado", kv("evento", "GASTO_EDITADO"), kv("gastoId", gasto.getId()));
             return gastoMapper.toDto(gastoRepository.save(gasto));
         });
     }
@@ -126,8 +128,7 @@ public class GastoService {
      */
     @Transactional(readOnly = true)
     public Optional<GastoDTO> findOne(Long id) {
-        LOG.debug("Pedido de gasto: id={}", id);
-        return buscarPropio(id).map(gastoMapper::toDto);
+        return buscarPropio(id, "ver").map(gastoMapper::toDto);
     }
 
     /**
@@ -136,10 +137,10 @@ public class GastoService {
      * @return {@code false} si no existe o no es del usuario autenticado (S1).
      */
     public boolean delete(Long id) {
-        return buscarPropio(id)
+        return buscarPropio(id, "borrar")
             .map(gasto -> {
                 gastoRepository.delete(gasto);
-                LOG.debug("Gasto borrado: id={}", id);
+                LOG.info("Gasto borrado", kv("evento", "GASTO_BORRADO"), kv("gastoId", id));
                 return true;
             })
             .orElse(false);
@@ -155,11 +156,19 @@ public class GastoService {
         return LocalDate.now(ZONA_HOY);
     }
 
-    private Optional<Gasto> buscarPropio(Long id) {
+    /**
+     * El gasto del usuario autenticado. Si el id existe pero es de otro, registra {@code GASTO_AJENO} (spec 004); la
+     * respuesta sigue siendo la de "no existe" (S1).
+     */
+    private Optional<Gasto> buscarPropio(Long id, String operacion) {
         if (id == null) {
             return Optional.empty();
         }
-        return gastoRepository.findOne(GastoSpecifications.conId(id).and(GastoSpecifications.delDueno(loginActual())));
+        Optional<Gasto> propio = gastoRepository.findOne(GastoSpecifications.conId(id).and(GastoSpecifications.delDueno(loginActual())));
+        if (propio.isEmpty() && gastoRepository.existsById(id)) {
+            LOG.warn("Gasto ajeno", kv("evento", "GASTO_AJENO"), kv("gastoId", id), kv("operacion", operacion));
+        }
+        return propio;
     }
 
     /**

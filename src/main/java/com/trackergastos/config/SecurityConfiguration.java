@@ -3,6 +3,7 @@ package com.trackergastos.config;
 import static org.springframework.security.config.Customizer.withDefaults;
 
 import com.trackergastos.security.*;
+import com.trackergastos.web.filter.PeticionHttpFilter;
 import com.trackergastos.web.filter.SpaWebFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,7 +15,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
-import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
@@ -40,6 +41,8 @@ public class SecurityConfiguration {
         http.cors(withDefaults())
             .csrf(csrf -> csrf.disable())
             .addFilterAfter(new SpaWebFilter(), BasicAuthenticationFilter.class)
+            // Spec 004: usuario en el MDC y PETICION_HTTP
+            .addFilterAfter(new PeticionHttpFilter(), BearerTokenAuthenticationFilter.class)
             .headers(headers ->
                 headers
                     .contentSecurityPolicy(csp -> csp.policyDirectives(jHipsterProperties.getSecurity().getContentSecurityPolicy()))
@@ -77,7 +80,7 @@ public class SecurityConfiguration {
             .exceptionHandling(exceptions ->
                 exceptions
                     .authenticationEntryPoint(new BearerTokenAuthenticationEntryPoint())
-                    .accessDeniedHandler(new BearerTokenAccessDeniedHandler())
+                    .accessDeniedHandler(new AccesoDenegadoHandler())
             )
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(withDefaults()));
         return http.build();
