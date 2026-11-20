@@ -1,6 +1,5 @@
 package com.trackergastos.web.rest;
 
-import com.trackergastos.repository.GastoRepository;
 import com.trackergastos.service.GastoQueryService;
 import com.trackergastos.service.GastoService;
 import com.trackergastos.service.criteria.GastoCriteria;
@@ -12,22 +11,24 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import tech.jhipster.web.util.HeaderUtil;
 import tech.jhipster.web.util.PaginationUtil;
-import tech.jhipster.web.util.ResponseUtil;
 
 /**
  * REST controller for managing {@link com.trackergastos.domain.Gasto}.
+ * Territorio del desarrollador (ADR-0007): las reglas viven en {@link GastoService} y {@link GastoQueryService};
+ * acá solo se traduce "no es mío o no existe" a 404 (spec 001 §5.1). Logs sin montos ni descripciones.
  */
 @RestController
 @RequestMapping("/api/gastos")
@@ -42,14 +43,19 @@ public class GastoResource {
 
     private final GastoService gastoService;
 
-    private final GastoRepository gastoRepository;
-
     private final GastoQueryService gastoQueryService;
 
-    public GastoResource(GastoService gastoService, GastoRepository gastoRepository, GastoQueryService gastoQueryService) {
+    public GastoResource(GastoService gastoService, GastoQueryService gastoQueryService) {
         this.gastoService = gastoService;
-        this.gastoRepository = gastoRepository;
         this.gastoQueryService = gastoQueryService;
+    }
+
+    /**
+     * Gasto ajeno o inexistente (spec 001 §5.1, defensa S1): siempre el mismo 404, que es el que da
+     * {@code ResponseUtil.wrapOrNotFound} en el GET, para que las dos situaciones sean indistinguibles (001-CA07).
+     */
+    private static ResponseStatusException noEncontrado() {
+        return new ResponseStatusException(HttpStatus.NOT_FOUND);
     }
 
     /**
@@ -61,7 +67,7 @@ public class GastoResource {
      */
     @PostMapping("")
     public ResponseEntity<GastoDTO> createGasto(@Valid @RequestBody GastoDTO gastoDTO) throws URISyntaxException {
-        LOG.debug("REST request to save Gasto : {}", gastoDTO);
+        LOG.debug("REST: crear gasto");
         if (gastoDTO.getId() != null) {
             throw new BadRequestAlertException("A new gasto cannot already have an ID", ENTITY_NAME, "idexists");
         }
@@ -86,7 +92,7 @@ public class GastoResource {
         @PathVariable(value = "id", required = false) final Long id,
         @Valid @RequestBody GastoDTO gastoDTO
     ) throws URISyntaxException {
-        LOG.debug("REST request to update Gasto : {}, {}", id, gastoDTO);
+        LOG.debug("REST: actualizar gasto id={}", id);
         if (gastoDTO.getId() == null) {
             throw new BadRequestAlertException("Invalid id", ENTITY_NAME, "idnull");
         }
@@ -94,11 +100,7 @@ public class GastoResource {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
 
-        if (!gastoRepository.existsById(id)) {
-            throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
-        }
-
-        gastoDTO = gastoService.update(gastoDTO);
+        gastoDTO = gastoService.update(gastoDTO).orElseThrow(GastoResource::noEncontrado);
         return ResponseEntity.ok()
             .headers(HeaderUtil.createEntityUpdateAlert(applicationName, true, ENTITY_NAME, gastoDTO.getId().toString()))
             .body(gastoDTO);
@@ -120,7 +122,7 @@ public class GastoResource {
         @PathVariable(value = "id", required = false) final Long id,
         @NotNull @RequestBody GastoDTO gastoDTO
     ) throws URISyntaxException {
-        LOG.debug("REST request to partially update Gasto : {}, {}", id, gastoDTO);
+        LOG.debug("REST: actualizar parcialmente gasto id={}", id);
         if (gastoDTO.getId() == null) {
             throw new BadRequestAlertException("Invalid id", ENTITY_NAME, "idnull");
         }
@@ -128,16 +130,10 @@ public class GastoResource {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
 
-        if (!gastoRepository.existsById(id)) {
-            throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
-        }
-
-        Optional<GastoDTO> result = gastoService.partialUpdate(gastoDTO);
-
-        return ResponseUtil.wrapOrNotFound(
-            result,
-            HeaderUtil.createEntityUpdateAlert(applicationName, true, ENTITY_NAME, gastoDTO.getId().toString())
-        );
+        GastoDTO result = gastoService.partialUpdate(gastoDTO).orElseThrow(GastoResource::noEncontrado);
+        return ResponseEntity.ok()
+            .headers(HeaderUtil.createEntityUpdateAlert(applicationName, true, ENTITY_NAME, result.getId().toString()))
+            .body(result);
     }
 
     /**
@@ -152,7 +148,7 @@ public class GastoResource {
         GastoCriteria criteria,
         @org.springdoc.core.annotations.ParameterObject Pageable pageable
     ) {
-        LOG.debug("REST request to get Gastos by criteria: {}", criteria);
+        LOG.debug("REST: listar gastos");
 
         Page<GastoDTO> page = gastoQueryService.findByCriteria(criteria, pageable);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
@@ -167,7 +163,7 @@ public class GastoResource {
      */
     @GetMapping("/count")
     public ResponseEntity<Long> countGastos(GastoCriteria criteria) {
-        LOG.debug("REST request to count Gastos by criteria: {}", criteria);
+        LOG.debug("REST: contar gastos");
         return ResponseEntity.ok().body(gastoQueryService.countByCriteria(criteria));
     }
 
@@ -179,9 +175,8 @@ public class GastoResource {
      */
     @GetMapping("/{id}")
     public ResponseEntity<GastoDTO> getGasto(@PathVariable("id") Long id) {
-        LOG.debug("REST request to get Gasto : {}", id);
-        Optional<GastoDTO> gastoDTO = gastoService.findOne(id);
-        return ResponseUtil.wrapOrNotFound(gastoDTO);
+        LOG.debug("REST: ver gasto id={}", id);
+        return ResponseEntity.ok().body(gastoService.findOne(id).orElseThrow(GastoResource::noEncontrado));
     }
 
     /**
@@ -192,8 +187,10 @@ public class GastoResource {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteGasto(@PathVariable("id") Long id) {
-        LOG.debug("REST request to delete Gasto : {}", id);
-        gastoService.delete(id);
+        LOG.debug("REST: borrar gasto id={}", id);
+        if (!gastoService.delete(id)) {
+            throw noEncontrado();
+        }
         return ResponseEntity.noContent()
             .headers(HeaderUtil.createEntityDeletionAlert(applicationName, true, ENTITY_NAME, id.toString()))
             .build();

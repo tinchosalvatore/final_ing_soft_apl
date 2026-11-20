@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.trackergastos.IntegrationTest;
 import com.trackergastos.domain.Categoria;
 import com.trackergastos.repository.CategoriaRepository;
+import com.trackergastos.security.AuthoritiesConstants;
 import com.trackergastos.service.dto.CategoriaDTO;
 import com.trackergastos.service.mapper.CategoriaMapper;
 import jakarta.persistence.EntityManager;
@@ -31,7 +32,8 @@ import tools.jackson.databind.ObjectMapper;
  */
 @IntegrationTest
 @AutoConfigureMockMvc
-@WithMockUser
+// Ajuste del coder (spec 001, S10 / 001-CA11): escribir categorías exige ROLE_ADMIN; el test generado corría como USER.
+@WithMockUser(authorities = { AuthoritiesConstants.ADMIN, AuthoritiesConstants.USER })
 class CategoriaResourceIT {
 
     private static final String DEFAULT_NOMBRE = "AAAAAAAAAA";

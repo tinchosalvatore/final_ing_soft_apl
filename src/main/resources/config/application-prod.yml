@@ -116,3 +116,8 @@ jhipster:
 # ===================================================================
 
 # application:
+application:
+  registro:
+    # Spec 001, regla 16: en prod real no hay registro público (las cuentas las crea un ADMIN).
+    # El perfil secret-samples (CI/E2E y demo) lo habilita con samples.registro-habilitado.
+    habilitado: ${samples.registro-habilitado:false}

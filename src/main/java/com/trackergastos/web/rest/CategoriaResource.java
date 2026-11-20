@@ -1,6 +1,7 @@
 package com.trackergastos.web.rest;
 
 import com.trackergastos.repository.CategoriaRepository;
+import com.trackergastos.security.AuthoritiesConstants;
 import com.trackergastos.service.CategoriaService;
 import com.trackergastos.service.dto.CategoriaDTO;
 import com.trackergastos.web.rest.errors.BadRequestAlertException;
@@ -15,12 +16,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import tech.jhipster.web.util.HeaderUtil;
 import tech.jhipster.web.util.ResponseUtil;
 
 /**
  * REST controller for managing {@link com.trackergastos.domain.Categoria}.
+ * Territorio del desarrollador (ADR-0007). Defensa S10 / 001-CA11: listar y ver lo puede cualquier usuario con sesión;
+ * crear, renombrar y borrar, solo un ADMIN (403 para un USER). Las reglas de nombre y de borrado están en
+ * {@code CategoriaService}.
  */
 @RestController
 @RequestMapping("/api/categorias")
@@ -49,6 +54,7 @@ public class CategoriaResource {
      * @return the {@link ResponseEntity} with status {@code 201 (Created)} and with body the new categoriaDTO, or with status {@code 400 (Bad Request)} if the categoria already has an ID.
      * @throws URISyntaxException if the Location URI syntax is incorrect.
      */
+    @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @PostMapping("")
     public ResponseEntity<CategoriaDTO> createCategoria(@Valid @RequestBody CategoriaDTO categoriaDTO) throws URISyntaxException {
         LOG.debug("REST request to save Categoria : {}", categoriaDTO);
@@ -71,6 +77,7 @@ public class CategoriaResource {
      * or with status {@code 500 (Internal Server Error)} if the categoriaDTO couldn't be updated.
      * @throws URISyntaxException if the Location URI syntax is incorrect.
      */
+    @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @PutMapping("/{id}")
     public ResponseEntity<CategoriaDTO> updateCategoria(
         @PathVariable(value = "id", required = false) final Long id,
@@ -105,6 +112,7 @@ public class CategoriaResource {
      * or with status {@code 500 (Internal Server Error)} if the categoriaDTO couldn't be updated.
      * @throws URISyntaxException if the Location URI syntax is incorrect.
      */
+    @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @PatchMapping(value = "/{id}", consumes = { "application/json", "application/merge-patch+json" })
     public ResponseEntity<CategoriaDTO> partialUpdateCategoria(
         @PathVariable(value = "id", required = false) final Long id,
@@ -160,6 +168,7 @@ public class CategoriaResource {
      * @param id the id of the categoriaDTO to delete.
      * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
      */
+    @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCategoria(@PathVariable("id") Long id) {
         LOG.debug("REST request to delete Categoria : {}", id);

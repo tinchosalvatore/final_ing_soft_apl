@@ -2,6 +2,8 @@ package com.trackergastos.web.rest.errors;
 
 import static org.springframework.core.annotation.AnnotatedElementUtils.findMergedAnnotation;
 
+import com.trackergastos.service.CampoInvalidoException;
+import com.trackergastos.service.ReglaDeNegocioException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import java.net.URI;
@@ -134,6 +136,15 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
             (problemProperties == null || !problemProperties.containsKey(FIELD_ERRORS_KEY))
         ) problem.setProperty(FIELD_ERRORS_KEY, getFieldErrors(fieldException));
 
+        // Spec 001 §5.1: una regla de un campo validada en el service sale con el mismo formato que Bean Validation
+        if (
+            err instanceof CampoInvalidoException campoInvalido &&
+            (problemProperties == null || !problemProperties.containsKey(FIELD_ERRORS_KEY))
+        ) problem.setProperty(
+            FIELD_ERRORS_KEY,
+            List.of(new FieldErrorVM(campoInvalido.getEntidad(), campoInvalido.getCampo(), campoInvalido.getMessage()))
+        );
+
         problem.setCause(buildCause(err.getCause(), request).orElse(null));
 
         return problem;
@@ -188,14 +199,22 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
 
     private URI getMappedType(Throwable err) {
         if (
-            err instanceof MethodArgumentNotValidException || err instanceof ConstraintViolationException
+            err instanceof MethodArgumentNotValidException ||
+            err instanceof ConstraintViolationException ||
+            err instanceof CampoInvalidoException
         ) return ErrorConstants.CONSTRAINT_VIOLATION_TYPE;
         return ErrorConstants.DEFAULT_TYPE;
     }
 
     private String getMappedMessageKey(Throwable err) {
-        if (err instanceof MethodArgumentNotValidException || err instanceof ConstraintViolationException) {
+        if (
+            err instanceof MethodArgumentNotValidException ||
+            err instanceof ConstraintViolationException ||
+            err instanceof CampoInvalidoException
+        ) {
             return ErrorConstants.ERR_VALIDATION;
+        } else if (err instanceof ReglaDeNegocioException reglaDeNegocio) {
+            return "error." + reglaDeNegocio.getClave();
         } else if (err instanceof ConcurrencyFailureException || err.getCause() instanceof ConcurrencyFailureException) {
             return ErrorConstants.ERR_CONCURRENCY_FAILURE;
         }
@@ -225,6 +244,7 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
         if (err instanceof ConcurrencyFailureException) return HttpStatus.CONFLICT;
         if (err instanceof BadCredentialsException) return HttpStatus.UNAUTHORIZED;
         if (err instanceof ConstraintViolationException) return HttpStatus.BAD_REQUEST;
+        if (err instanceof CampoInvalidoException || err instanceof ReglaDeNegocioException) return HttpStatus.BAD_REQUEST;
         return null;
     }
 

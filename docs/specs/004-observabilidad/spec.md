@@ -15,7 +15,7 @@ Hoy, si algo falla en el servidor o alguien intenta adivinar contraseñas, nadie
 | **Identificador de traza** | Valor que comparten todos los registros generados por una misma petición, para poder seguirla de punta a punta. |
 | **Dashboard de salud** | Pantalla que muestra el estado del sistema con gráficos que se actualizan solos. |
 | **Alerta** | Aviso automático que se dispara cuando se cumple una condición sobre los registros. |
-| **Dato sensible** | Contraseñas, tokens, montos y descripciones de gastos. |
+| **Dato sensible** | Contraseñas, tokens, montos y descripciones de gastos, y **emails** de los usuarios (dato personal). |
 
 ## 3. Comportamiento esperado
 
@@ -34,7 +34,7 @@ Hoy, si algo falla en el servidor o alguien intenta adivinar contraseñas, nadie
 | `PETICION_HTTP` | INFO | Cada petición a `/api/**` al terminar | método, ruta, código de estado, duración en ms |
 | `ERROR_INESPERADO` | ERROR | Excepción no controlada | tipo de error (el detalle técnico solo en el registro, nunca en la respuesta al cliente) |
 
-3. **Nunca** se registran datos sensibles: ni contraseñas (tampoco las incorrectas), ni tokens, ni montos ni descripciones de gastos.
+3. **Nunca** se registran datos sensibles: ni contraseñas (tampoco las incorrectas), ni tokens, ni montos ni descripciones de gastos, ni emails. *(Hallazgo del verify del 000: el `MailService` que genera JHipster loguea el email en WARN.)*
 4. Los registros se centralizan en un único lugar donde se pueden buscar y filtrar por cualquiera de sus campos.
 
 ### Qué se puede ver
@@ -49,7 +49,7 @@ Hoy, si algo falla en el servidor o alguien intenta adivinar contraseñas, nadie
 
 ## 4. Casos borde
 - Un login fallido con un usuario que no existe → se registra igual que con uno que existe (mismo nivel y mismo formato), para no revelar qué usuarios existen.
-- Login de un usuario **desactivado** (aunque la contraseña sea correcta) → el cliente recibe exactamente la misma respuesta que con credenciales incorrectas ("no autorizado"), no un error del servidor, y se registra `LOGIN_FALLIDO`. *(Hallazgo del paso 000: JHipster 9.4 responde 500 en este caso.)*
+- Login de un usuario **desactivado** (con cualquier contraseña) → el cliente recibe exactamente la misma respuesta que con credenciales incorrectas ("no autorizado"), no un error del servidor, y se registra `LOGIN_FALLIDO`. *(Hallazgo del paso 000: JHipster 9.4 responde 500 en este caso.)*
 - El sistema de registros centralizado está caído → la app sigue funcionando y sigue mostrando los registros en su consola.
 - 4 logins fallidos en 5 minutos → no hay alerta. Al 5.º → sí.
 - Error inesperado → el cliente recibe un mensaje genérico (sin nombres de clases, rutas ni SQL) y el registro tiene el detalle.
@@ -69,7 +69,7 @@ Hoy, si algo falla en el servidor o alguien intenta adivinar contraseñas, nadie
 | 004-CA08 | Alerta | 5 logins fallidos en menos de 5 minutos | La alerta se dispara y queda registrada |
 | 004-CA09 | Sin alerta por debajo del umbral | 4 logins fallidos en 5 minutos | La alerta no se dispara |
 | 004-CA10 | Tolerancia a caída | Sistema de registros apagado, usar la app | La app responde normalmente; los registros salen por consola |
-| 004-CA11 | Usuario desactivado | Login de un usuario desactivado, con contraseña correcta | Misma respuesta que credenciales incorrectas ("no autorizado"); registro `LOGIN_FALLIDO`; ningún `ERROR_INESPERADO` |
+| 004-CA11 | Usuario desactivado | Login de un usuario desactivado, con **cualquier** contraseña (correcta o no) | Misma respuesta que credenciales incorrectas ("no autorizado"); registro `LOGIN_FALLIDO`; ningún `ERROR_INESPERADO` |
 
 ## 6. Fuera de alcance
 - Política de retención y borrado de registros.

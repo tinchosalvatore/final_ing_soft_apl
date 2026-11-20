@@ -5,7 +5,6 @@ import static com.trackergastos.web.rest.TestUtil.createUpdateProxyForBean;
 import static com.trackergastos.web.rest.TestUtil.sameNumber;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
-import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -15,25 +14,18 @@ import com.trackergastos.domain.Gasto;
 import com.trackergastos.domain.User;
 import com.trackergastos.repository.GastoRepository;
 import com.trackergastos.repository.UserRepository;
-import com.trackergastos.service.GastoService;
 import com.trackergastos.service.dto.GastoDTO;
 import com.trackergastos.service.mapper.GastoMapper;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -42,9 +34,12 @@ import tools.jackson.databind.ObjectMapper;
 
 /**
  * Integration tests for the {@link GastoResource} REST controller.
+ *
+ * Test generado por JHipster, ajustado por el agente coder a las reglas de la spec 001 (ver docs/specs/001-gastos/tasks.md):
+ * los gastos tienen dueño (el usuario del {@code @WithMockUser}, "user"), un id inexistente da 404 en PUT y PATCH, y el
+ * filtro {@code userId} se ignora (S2). Los criterios de la spec los prueban los tests del agente testing.
  */
 @IntegrationTest
-@ExtendWith(MockitoExtension.class)
 @AutoConfigureMockMvc
 @WithMockUser
 class GastoResourceIT {
@@ -75,14 +70,8 @@ class GastoResourceIT {
     @Autowired
     private UserRepository userRepository;
 
-    @Mock
-    private GastoRepository gastoRepositoryMock;
-
     @Autowired
     private GastoMapper gastoMapper;
-
-    @Mock
-    private GastoService gastoServiceMock;
 
     @Autowired
     private EntityManager em;
@@ -102,6 +91,8 @@ class GastoResourceIT {
      */
     public static Gasto createEntity(EntityManager em) {
         Gasto gasto = new Gasto().monto(DEFAULT_MONTO).fecha(DEFAULT_FECHA).descripcion(DEFAULT_DESCRIPCION);
+        // Spec 001: el gasto es del usuario autenticado del test (@WithMockUser → "user", cargado por Liquibase)
+        gasto.setUser(em.createQuery("select u from User u where u.login = 'user'", User.class).getSingleResult());
         // Add required entity
         Categoria categoria;
         if (TestUtil.findAll(em, Categoria.class).isEmpty()) {
@@ -240,23 +231,6 @@ class GastoResourceIT {
             .andExpect(jsonPath("$.[*].monto").value(hasItem(sameNumber(DEFAULT_MONTO))))
             .andExpect(jsonPath("$.[*].fecha").value(hasItem(DEFAULT_FECHA.toString())))
             .andExpect(jsonPath("$.[*].descripcion").value(hasItem(DEFAULT_DESCRIPCION)));
-    }
-
-    @SuppressWarnings({ "unchecked" })
-    void getAllGastosWithEagerRelationshipsIsEnabled() throws Exception {
-        when(gastoServiceMock.findAllWithEagerRelationships(any())).thenReturn(new PageImpl(new ArrayList<>()));
-
-        restGastoMockMvc.perform(get(ENTITY_API_URL + "?eagerload=true")).andExpect(status().isOk());
-
-        verify(gastoServiceMock, times(1)).findAllWithEagerRelationships(any());
-    }
-
-    @SuppressWarnings({ "unchecked" })
-    void getAllGastosWithEagerRelationshipsIsNotEnabled() throws Exception {
-        when(gastoServiceMock.findAllWithEagerRelationships(any())).thenReturn(new PageImpl(new ArrayList<>()));
-
-        restGastoMockMvc.perform(get(ENTITY_API_URL + "?eagerload=false")).andExpect(status().isOk());
-        verify(gastoRepositoryMock, times(1)).findAll(any(Pageable.class));
     }
 
     @Test
@@ -505,24 +479,14 @@ class GastoResourceIT {
 
     @Test
     @Transactional
-    void getAllGastosByUserIsEqualToSomething() throws Exception {
-        User user;
-        if (TestUtil.findAll(em, User.class).isEmpty()) {
-            gastoRepository.saveAndFlush(gasto);
-            user = UserResourceIT.createEntity();
-        } else {
-            user = TestUtil.findAll(em, User.class).getFirst();
-        }
-        em.persist(user);
-        em.flush();
-        gasto.setUser(user);
+    void getAllGastosByUserFilterIsIgnored() throws Exception {
+        // Spec 001 / S2: el criterio de usuario que manda el cliente se pisa con "dueño = usuario autenticado".
+        // Antes (generado): userId.equals=<otro> no encontraba el gasto. Ahora lo encuentra igual, porque es del usuario actual.
         gastoRepository.saveAndFlush(gasto);
-        Long userId = user.getId();
-        // Get all the gastoList where user equals to userId
-        defaultGastoShouldBeFound("userId.equals=" + userId);
+        Long userId = gasto.getUser().getId();
 
-        // Get all the gastoList where user equals to (userId + 1)
-        defaultGastoShouldNotBeFound("userId.equals=" + (userId + 1));
+        defaultGastoShouldBeFound("userId.equals=" + userId);
+        defaultGastoShouldBeFound("userId.equals=" + (userId + 1));
     }
 
     private void defaultGastoFiltering(String shouldBeFound, String shouldNotBeFound) throws Exception {
@@ -612,12 +576,12 @@ class GastoResourceIT {
         // Create the Gasto
         GastoDTO gastoDTO = gastoMapper.toDto(gasto);
 
-        // If the entity doesn't have an ID, it will throw BadRequestAlertException
+        // Spec 001 §5.1: un id inexistente da 404, igual que un gasto ajeno (antes: 400 idnotfound)
         restGastoMockMvc
             .perform(
                 put(ENTITY_API_URL_ID, gastoDTO.getId()).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(gastoDTO))
             )
-            .andExpect(status().isBadRequest());
+            .andExpect(status().isNotFound());
 
         // Validate the Gasto in the database
         assertSameRepositoryCount(databaseSizeBeforeUpdate);
@@ -728,14 +692,14 @@ class GastoResourceIT {
         // Create the Gasto
         GastoDTO gastoDTO = gastoMapper.toDto(gasto);
 
-        // If the entity doesn't have an ID, it will throw BadRequestAlertException
+        // Spec 001 §5.1: un id inexistente da 404, igual que un gasto ajeno (antes: 400 idnotfound)
         restGastoMockMvc
             .perform(
                 patch(ENTITY_API_URL_ID, gastoDTO.getId())
                     .contentType("application/merge-patch+json")
                     .content(om.writeValueAsBytes(gastoDTO))
             )
-            .andExpect(status().isBadRequest());
+            .andExpect(status().isNotFound());
 
         // Validate the Gasto in the database
         assertSameRepositoryCount(databaseSizeBeforeUpdate);

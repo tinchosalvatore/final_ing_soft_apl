@@ -1,0 +1,6 @@
+{
+  "error": {
+    "nombreduplicado": "Ya existe una categoría con ese nombre (sin distinguir mayúsculas ni espacios).",
+    "categoriaenuso": "No se puede borrar la categoría porque tiene gastos asociados."
+  }
+}

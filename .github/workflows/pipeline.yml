@@ -1,26 +1,27 @@
 # Pipeline de CI del Tracker de Gastos.
-# VERSIÓN INICIAL escrita por el agente documentador, traduciendo el pipeline de referencia de la cátedra
-# (Node: npm ci / npm test / npm audit / semgrep / gitleaks) a este stack (Java + Maven + React + Playwright).
-# La termina y ajusta el agente CI siguiendo docs/specs/005-integracion-continua/spec.md y docs/catedra/ci.md.
+# Versión inicial: agente documentador (traducción del pipeline de referencia de la cátedra, que era para Node:
+# npm ci / npm test / npm audit / semgrep / gitleaks, a este stack: Java + Maven + React + Playwright).
+# Terminado por el agente ci: docs/specs/005-integracion-continua/{spec,plan,verify}.md
 # Decisión y diferencias con el original: docs/adr/ADR-0006-pipeline-ci.md
 
 # Nombre del workflow, tal como aparece en la pestaña Actions de GitHub.
 name: pipeline
 
-# Eventos que disparan el workflow.
+# Eventos que disparan el workflow (spec 005 §3.1).
 on:
-  # Cada vez que se abre o actualiza un PR contra main (igual que el de la cátedra).
+  # Cada vez que se abre, reabre o actualiza un PR contra main (igual que el de la cátedra).
+  # Es "pull_request" y no "pull_request_target": un PR desde un fork no recibe secretos ni un token con escritura.
   pull_request:
     branches: [main]
-  # Al integrar en main, para que main también tenga su estado verde/rojo.
+  # Al integrar en main, para que main también tenga su estado verde/rojo (valida el resultado ya integrado).
   push:
     branches: [main]
 
-# Permisos del GITHUB_TOKEN: solo los necesarios.
+# Permisos del GITHUB_TOKEN: solo los necesarios (spec 005 §3.6).
 permissions:
   # Solo lectura del código.
   contents: read
-  # Gitleaks comenta los hallazgos en el PR.
+  # Gitleaks comenta los hallazgos en el PR. Es el único permiso de escritura.
   pull-requests: write
 
 # Si llega un push nuevo al mismo PR, se cancela la ejecución anterior (no gasta minutos en código viejo).
@@ -40,51 +41,103 @@ jobs:
       SPRING_JPA_SHOW_SQL: false
 
     # Orden: lo más barato primero, para fallar rápido (secretos → SAST → SCA → tests → E2E).
+    # Los pasos son secuenciales: el primero que falla corta los siguientes y queda marcado en rojo (spec 005 §3.3).
     steps:
       # Descarga el código. Fijado a un SHA (no a un tag que puede moverse) contra ataques de cadena de suministro.
       # fetch-depth: 0 trae todo el historial para que Gitleaks revise todos los commits del PR.
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 0 }
 
       # --- 1. Secretos -------------------------------------------------------------------------
-      # Gitleaks busca claves, tokens y contraseñas en el código y el historial. Fijado a un SHA (v2.3.9).
+      # Gitleaks busca claves, tokens y contraseñas en el código y el historial del PR.
+      # Falsos positivos: .gitleaksignore (con comentario). Repo personal: no requiere GITLEAKS_LICENSE.
       - name: Secretos (Gitleaks)
-        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # --- 2. SAST -----------------------------------------------------------------------------
       # Semgrep analiza el código sin ejecutarlo buscando patrones inseguros conocidos.
-      # Versión fija de Semgrep (no "latest") por el factor II. --error hace fallar el paso si hay hallazgos.
-      # TODO(agente CI): fijar la versión exacta de semgrep vigente al implementar.
+      # Versión exacta (factor II). --error hace fallar el paso si hay hallazgos.
+      # Falsos positivos: "// nosemgrep: <id-regla>" en la línea, con la justificación al lado.
       - name: Instalar Semgrep
-        run: pip install semgrep==1.*
+        run: pip install semgrep==1.186.0
       - name: SAST (Semgrep)
         run: semgrep scan --config p/java --config p/typescript --config p/react --error --exclude target --exclude node_modules
 
-      # --- 3. SCA ------------------------------------------------------------------------------
-      # Trivy busca vulnerabilidades conocidas en las dependencias (pom.xml y package-lock.json).
-      # Reemplaza al "npm audit" de la cátedra porque cubre Maven y npm a la vez. Fijado a un SHA (v0.36.0).
-      - name: SCA (Trivy)
-        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8
+      # --- Entorno de Java (lo necesita el SCA para resolver las dependencias de Maven) -----------
+      # Java 21 (versión recomendada por JHipster 9.4). Fijado a un SHA. Cachea ~/.m2.
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      # --- 3. SCA ------------------------------------------------------------------------------
+      # Trivy no sabe resolver solo las versiones que hereda pom.xml de Spring Boot (si Maven Central le
+      # devuelve 429, sigue de largo SIN analizar el backend). Por eso primero Maven baja todo a ~/.m2 y
+      # después Trivy lo lee de ahí, sin red (--offline-scan). Ver plan.md §5.1 y ADR-0006.
+      - name: SCA - resolver dependencias de Maven
+        run: ./mvnw -ntp -q dependency:go-offline
+
+      # Trivy busca vulnerabilidades conocidas en las dependencias de producción (pom.xml y package-lock.json).
+      # Reemplaza al "npm audit" de la cátedra porque cubre Maven y npm a la vez.
+      # Por defecto Trivy no analiza las devDependencies de npm ni el scope test de Maven: es lo que pide la spec
+      # (solo dependencias de producción, spec 005 §2).
+      # Falsos positivos: .trivyignore con el CVE y el motivo.
+      - name: SCA (Trivy)
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        env:
+          TRIVY_OFFLINE_SCAN: true
+        with:
+          version: v0.70.0
           scan-type: fs
           scan-ref: .
           scanners: vuln
+          skip-dirs: node_modules,target,.cache
           severity: HIGH,CRITICAL
           # Solo falla por vulnerabilidades que ya tienen versión corregida (spec 005, casos borde).
           ignore-unfixed: true
           exit-code: '1'
 
-      # --- Entorno de build ----------------------------------------------------------------------
-      # Java 21 (versión recomendada por JHipster 9.4). Fijado a un SHA (v6.3.0). Cachea ~/.m2.
-      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880
-        with:
-          distribution: temurin
-          java-version: '21'
-          cache: maven
-      # Node (versión recomendada por JHipster 9.4). Fijado a un SHA (v7.1.0). Cachea ~/.npm.
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+      # Guarda de cobertura (spec 005 §4: si el SCA no logra analizar alguna parte, falla).
+      # Reusa el binario y la base que bajó el paso anterior. Falla si falta pom.xml o package-lock.json en el
+      # resultado, o si alguna dependencia de Maven quedó sin versión (= Trivy no la pudo resolver).
+      # Además lista, sin fallar, las HIGH/CRITICAL que todavía no tienen versión corregida (spec 005 §4).
+      - name: SCA - cobertura
+        run: |
+          trivy fs . --scanners vuln --offline-scan --skip-db-update \
+            --cache-dir "$GITHUB_WORKSPACE/.cache/trivy" \
+            --skip-dirs node_modules,target,.cache \
+            --list-all-pkgs --format json --quiet --output "$RUNNER_TEMP/trivy-cobertura.json"
+          R="$RUNNER_TEMP/trivy-cobertura.json"
+
+          for objetivo in pom.xml package-lock.json; do
+            n=$(jq --arg t "$objetivo" '[.Results[]? | select(.Target == $t) | .Packages[]?] | length' "$R")
+            echo "$objetivo: $n dependencias analizadas"
+            if [ "$n" -le 1 ]; then
+              echo "::error::Trivy no analizó las dependencias de $objetivo"
+              exit 1
+            fi
+          done
+
+          sin_version=$(jq -r '.Results[]? | select(.Target == "pom.xml") | .Packages[]? | select((.Version // "") == "") | .Name' "$R")
+          if [ -n "$sin_version" ]; then
+            echo "::error::Trivy no pudo resolver la versión de estas dependencias de Maven:"
+            echo "$sin_version"
+            exit 1
+          fi
+
+          echo "--- HIGH/CRITICAL sin versión corregida (no bloquean, spec 005 §4) ---"
+          jq -r '.Results[]? | .Target as $t | .Vulnerabilities[]?
+                 | select((.Severity == "HIGH" or .Severity == "CRITICAL") and ((.FixedVersion // "") == ""))
+                 | "\($t)  \(.VulnerabilityID)  \(.PkgName) \(.InstalledVersion)  \(.Severity)"' "$R" \
+            | sort -u | sed 's/^/  /' || true
+          echo "--- fin ---"
+
+      # --- Entorno de Node ---------------------------------------------------------------------
+      # Node (versión recomendada por JHipster 9.4). Fijado a un SHA. Cachea ~/.npm.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24.21.0'
           cache: npm
@@ -104,6 +157,7 @@ jobs:
 
       # --- 6. E2E ------------------------------------------------------------------------------
       # Empaqueta la app, levanta Postgres con docker compose y corre Playwright contra la app real.
+      # Reintentos: playwright.config.ts tiene retries: 2 (spec 005 §4: hasta 2 reintentos, rojo al 3er fallo).
       - name: E2E - empaquetar
         run: npm run ci:e2e:package
       - name: E2E - levantar servicios
@@ -111,11 +165,12 @@ jobs:
       - name: E2E - Playwright
         run: npm run ci:e2e:run
 
-      # Reporte HTML y traces de Playwright, descargables desde la ejecución (también si falló).
-      # TODO(agente CI): confirmar la carpeta real que genera JHipster (outputDir/report de playwright.config.ts).
+      # Reporte HTML (target/playwright/report, porque GitHub define CI=true) y traces + capturas de los tests que
+      # fallaron (target/playwright/results). Descargable desde la ejecución, también si falló (spec 005 §3.4).
+      # Si el pipeline cortó antes del E2E, no hay nada que subir: por eso "warn" y no "error".
       - name: Guardar reporte E2E
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: reporte-e2e
           path: target/playwright/

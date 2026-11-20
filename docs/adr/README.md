@@ -13,6 +13,7 @@ Decisiones que condicionan decisiones futuras. Si algo del proyecto no es conven
 | [0005](ADR-0005-pwa-workbox-indexeddb.md) | PWA con Workbox y gastos pendientes en IndexedDB | Aceptado |
 | [0006](ADR-0006-pipeline-ci.md) | Pipeline de CI basado en el de la cátedra, no en `jhipster ci-cd` | Aceptado |
 | [0007](ADR-0007-propiedad-de-los-datos.md) | Cada gasto pertenece a un usuario; las categorías son globales | Aceptado |
+| [0008](ADR-0008-ui-propia-y-archivos-generados-modificados.md) | Interfaz propia de "Mis gastos" y archivos generados que se modifican a mano | Aceptado |
 
 ## Plantilla
 

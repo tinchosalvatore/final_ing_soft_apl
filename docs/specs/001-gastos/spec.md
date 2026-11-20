@@ -38,9 +38,12 @@ Además del objetivo de producto hay un objetivo de seguridad: **los gastos son 
 ### Categorías
 9. Cualquier usuario con sesión puede **listar** las categorías (para elegir una al cargar un gasto).
 10. Solo un `ADMIN` puede **crear, renombrar y borrar** categorías. Un `USER` que lo intente recibe "prohibido".
-11. El nombre de una categoría tiene entre 2 y 40 caracteres y es **único sin distinguir mayúsculas ni espacios al inicio o al final** ("Supermercado" y " supermercado " son el mismo nombre).
+11. El nombre de una categoría tiene entre 2 y 40 caracteres y es **único sin distinguir mayúsculas ni espacios al inicio o al final** ("Supermercado" y " supermercado " son el mismo nombre). El nombre se guarda **sin los espacios del inicio y del final**, respetando las mayúsculas que escribió el ADMIN.
 12. **No se puede borrar una categoría que tiene gastos asociados.** El sistema lo rechaza con un mensaje que explica el motivo.
 13. El sistema arranca con estas categorías cargadas: Supermercado, Transporte, Servicios, Salud, Ocio, Otros.
+
+### Cuentas
+16. **En producción no hay registro público.** Las cuentas las crea un `ADMIN` desde la administración de usuarios. Un intento de registrarse se rechaza y **no crea, modifica ni borra ningún usuario** (en particular, no reemplaza una cuenta desactivada). En los entornos de desarrollo y de pruebas (incluido el perfil de muestras que usan el CI y la demo) el registro sigue disponible. *(Decisión del humano a partir del verify del paso 000, riesgo R1 de `seguridad.md`.)*
 
 ### Interfaz
 14. El menú principal tiene "Mis gastos" (listado con filtros y botón para nuevo gasto). La gestión de categorías aparece solo para `ADMIN`.
@@ -76,6 +79,35 @@ Además del objetivo de producto hay un objetivo de seguridad: **los gastos son 
 | 001-CA13 | Borrar categoría en uso | ADMIN borra Supermercado, que tiene gastos | Se rechaza con mensaje explicativo; la categoría sigue existiendo |
 | 001-CA14 | Categorías iniciales | Sistema recién instalado | Existen las 6 categorías del punto 13 |
 | 001-CA15 | Flujo E2E | En el navegador, `user` inicia sesión, carga un gasto, lo ve en "Mis gastos", lo edita y lo borra | Cada paso se refleja en pantalla |
+| 001-CA16 | Registro deshabilitado | Con el registro deshabilitado (como en producción), alguien sin sesión intenta registrarse con el login de una cuenta desactivada existente | Se rechaza; la cuenta original sigue existiendo con los mismos datos y no se crea ninguna |
+
+## 5.1 Contrato observable (para escribir los tests)
+No describe *cómo* se implementa: fija lo que un test puede observar desde afuera (API y textos de la interfaz), para que el agente testing no tenga que inventarlo. Se agregó a pedido del agente testing durante la fase roja.
+
+### API
+| Situación | Respuesta |
+|---|---|
+| Validación de un campo (001-CA02, CA03) | **400**, *problem* de JHipster, con `fieldErrors[].field` = `monto` o `fecha` (aunque la regla se valide en el service) |
+| Nombre de categoría duplicado (001-CA12) | **400**, *problem* con `message` = `error.nombreduplicado` |
+| Borrar categoría en uso (001-CA13) | **400**, *problem* con `message` = `error.categoriaenuso` |
+| Gasto ajeno o inexistente en GET, PUT, PATCH o DELETE (001-CA07, CA08) | **404** en todos los casos, también para un id inexistente. El cuerpo es igual en los dos casos, salvo los campos que contienen el id o la ruta (`instance`, `path`) |
+| Sin sesión (001-CA10) | **401** |
+| USER que escribe categorías (001-CA11) | **403** |
+| Registro con el registro deshabilitado (001-CA16) | **401** |
+| Conteo de gastos (`/api/gastos/count`, que genera JHipster) | Cuenta **solo los gastos del usuario autenticado**, con los mismos filtros. Si no, revela cuántos gastos tienen los demás (A01) |
+| Respuesta de crear o editar un gasto | Incluye `user.id` y `user.login` del dueño (ningún otro dato del usuario: ni email ni nombre) |
+| Orden del listado (punto 4) | El backend **impone siempre** fecha descendente y después id descendente. Si el cliente manda otro `sort`, se ignora |
+
+### Interfaz (textos que usan los E2E)
+| Elemento | Texto |
+|---|---|
+| Menú | "Mis gastos", "Resumen" (y "Categorías" solo para ADMIN) |
+| Botón para crear | "Nuevo gasto" |
+| Labels del formulario | "Monto", "Fecha", "Categoría", "Descripción" |
+| Botones del formulario | "Guardar", "Cancelar" |
+| Acciones por fila | "Editar", "Borrar" |
+| Confirmación de borrado | Diálogo con el botón "Confirmar" |
+| Formato de montos | `$ 1.500,50` (es-AR: punto de miles, coma decimal) |
 
 ## 6. Fuera de alcance
 - Ingresos, saldos y cuentas bancarias.
