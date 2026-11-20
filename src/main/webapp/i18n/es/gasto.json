@@ -2,7 +2,7 @@
   "trackerGastosApp": {
     "gasto": {
       "home": {
-        "title": "Gastos",
+        "titulo": "Gastos",
         "refreshListLabel": "Refrescar lista",
         "createLabel": "Crear nuevo Gasto",
         "createOrEditLabel": "Crear o editar Gasto",
