@@ -112,6 +112,47 @@ E2E, corrido con `npx playwright test --retries=0 e2e/negocio/001-gastos.pw.ts` 
 
 Falla porque todavía no existe el menú "Mis gastos". Es la falla esperada.
 
+## Fase verde (agente coder, 2026-11-20)
+
+Plan: `plan.md` (aprobado). Decisión estructural: **ADR-0008**.
+
+| # | Tarea | Criterios que cubre | Estado | Commit |
+|---|---|---|---|---|
+| C1 | Registro deshabilitado en prod: `application.registro.habilitado` (`true` por defecto, `false` en prod real, `true` en `secret-samples`). Lo controla `UserService.registerUser` antes de tocar la tabla de usuarios | 001-CA16, regla 16 | hecha | `feat(001): registro público deshabilitado…` |
+| C2 | `CampoInvalidoException` y `ReglaDeNegocioException`, traducidas por el `ExceptionTranslator` a `fieldErrors` / `error.<clave>` | §5.1 | hecha | `feat(001): errores de reglas de negocio…` |
+| C3 | `GastoService`, `GastoQueryService`, `GastoSpecifications` y `GastoResource`: dueño = yo, 404 para un gasto ajeno o inexistente, validaciones, orden impuesto, logs solo con ids | 001-CA01 a CA10 (S1 a S4) | hecha | `feat(001): control de acceso y validaciones…` |
+| C4 | `CategoriaService` (`strip`, 2 a 40 caracteres, únicos normalizados, no se borra en uso), `CategoriaRepository.existeNombreNormalizado` y `@PreAuthorize` ADMIN en `CategoriaResource` | 001-CA11 a CA13 (S10) | hecha | `feat(001): reglas de categorías…` |
+| C5 | Changelog de las categorías iniciales, sin contexto | 001-CA14 | hecha | `feat(001): categorías iniciales…` |
+| C6 | Ajuste de los tests generados (ver abajo) | — | hecha | `test(001): …` |
+| C7 | Módulo "Mis gastos" (`app/modules/gastos/`): listado con filtros, formulario y diálogo de borrado. Menú "Mis gastos"; "Categorías" y "Entidades" solo ADMIN. Tests Vitest de formato y validaciones | 001-CA15, reglas 14 y 15 | hecha | `feat(001): módulo Mis gastos…`, `feat(001): menú…` |
+| C8 | ADR-0008 y su entrada en el índice | — | hecha | `docs(001): ADR-0008…` |
+| C9 | Integrar `main` (PR #4 de ci: pipeline nuevo, Tomcat y Jackson) | — | hecha | merge `origin/main` |
+| C10 | Push y PR #5 (de borrador a "ready for review") | — | hecha | |
+| T6 | **Regrabar el E2E con codegen**: ahora sí existe "Mis gastos". Graba el humano y pule el agente testing | 001-CA15 | **pendiente (testing)** | |
+
+### Tests generados que se ajustaron (no son del agente testing)
+- `GastoResourceIT`:
+  - `createEntity` le asigna el dueño `user`, que es el del `@WithMockUser`.
+  - `putNonExistingGasto` y `patchNonExistingGasto` esperan **404** (antes 400 `idnotfound`), como pide la spec §5.1.
+  - `getAllGastosByUserIsEqualToSomething` pasa a `getAllGastosByUserFilterIsIgnored`: el filtro `userId` se ignora (S2).
+  - Se borraron los dos métodos de eager load con mocks, que no eran `@Test` y usaban `GastoService.findAllWithEagerRelationships`, que ya no existe.
+- `CategoriaResourceIT`: corre como ADMIN (S10).
+- `header.spec.tsx`: un USER ve "Mis gastos" y no el menú "Entidades" (ADR-0008).
+- E2E `entity/gasto.pw.ts` y `entity/categoria.pw.ts`: loguean como ADMIN, porque el CRUD generado es solo para ADMIN (ADR-0008, S10).
+
+**No se modificó ningún test del agente testing.**
+
+### Evidencia (2026-11-20)
+- Tests del agente testing, todos en verde: `CategoriaReglasIT` 7/7, `GastoControlAccesoIT` 14/14, `GastoValidacionIT` 13/13 y `RegistroDeshabilitadoIT` 2/2.
+- `./mvnw -ntp verify` (con ArchUnit): 58 tests unitarios y 206 de integración, todos en verde.
+- `npm test` (lint + Vitest): 181 en verde.
+- E2E contra la app levantada con `./mvnw` (perfil dev): `e2e/negocio/001-gastos.pw.ts` (001-CA15) pasa, y la suite completa también (58 tests; los 8 de `entity/` primero fallaron como USER y pasan como ADMIN).
+
+### Notas del coder
+- "Hoy" se calcula siempre con `America/Argentina/Buenos_Aires` (`GastoService.ZONA_HOY`), sin `Clock` inyectable. Los tests de testing usan la misma zona.
+- Los textos del módulo están en `textos.ts` y no en un JSON de i18n (ADR-0008). Solo las claves de error de negocio van en `i18n/es/reglas.json`.
+- El CRUD generado de gastos sigue accesible escribiendo `/gasto` en la URL, pero el backend aplica las mismas reglas.
+
 ## Notas para la próxima sesión
 - Los tests crean `ana` y `beto` y buscan las categorías por nombre o las crean, así funcionan antes y después de la carga inicial (CA14).
 - El E2E usa el usuario `user` de JHipster y una descripción única para encontrar la fila; si queda algo a medias, lo borra por API en el `afterEach`.
