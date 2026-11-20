@@ -60,7 +60,8 @@ class UserMapperTest {
         AdminUserDTO convertedUserDto = userMapper.userToAdminUserDTO(user);
 
         assertThat(convertedUserDto.getId()).isEqualTo(user.getId());
-        assertThat(convertedUserDto.getLogin()).isEqualTo(user.getLogin());
+        // PRUEBA DESCARTABLE 005-CA02: assert roto a propósito (no se mergea)
+        assertThat(convertedUserDto.getLogin()).isEqualTo("login-que-no-es");
         assertThat(convertedUserDto.getFirstName()).isEqualTo(user.getFirstName());
         assertThat(convertedUserDto.getLastName()).isEqualTo(user.getLastName());
         assertThat(convertedUserDto.getEmail()).isEqualTo(user.getEmail());
