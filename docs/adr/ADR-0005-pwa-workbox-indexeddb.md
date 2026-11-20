@@ -20,6 +20,7 @@
 - **Estrategias:**
   - App shell (HTML, JS, CSS, íconos): precache.
   - `GET /api/gastos*`, `/api/categorias*` y `/api/resumen*`: **NetworkFirst**, caché `api-v1`, solo respuestas 200 y hasta 50 entradas.
+  - `GET /api/account`: **NetworkFirst** (decisión D1 del agente pwa: sin esto la app no abre sin red con la sesión iniciada). Mitigación: si la app abre sin token, borra `api-v1`, para que una `/api/account` guardada no haga pasar por logueado a nadie.
   - El resto de `/api/**` (incluida la autenticación): **NetworkOnly**.
 - **Base offline parametrizada** en `src/main/webapp/app/pwa/offline-db.config.ts`: nombre y versión de la base IndexedDB, *object stores* e índices (store `pendientes`, índice por `login`).
 - **Gastos cargados offline:** los guarda **la app** en IndexedDB como pendientes y los envía al volver la conexión con el token vigente.

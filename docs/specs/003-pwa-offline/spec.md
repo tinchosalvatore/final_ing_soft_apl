@@ -40,7 +40,7 @@ Objetivo: que la app **se pueda instalar** en el celular o la computadora, que *
 13. Sin conexión **no se puede editar ni borrar** gastos ya sincronizados: esas acciones aparecen deshabilitadas, con el motivo.
 
 ### Privacidad y sesión
-14. Al **cerrar sesión** se borran del dispositivo todos los datos guardados y los pendientes. Si hay pendientes, antes de cerrar se avisa: "Tenés N gastos sin sincronizar. Si cerrás sesión se van a perder." y el usuario confirma o cancela.
+14. Al **cerrar sesión** se borran del dispositivo todos los datos guardados y **los pendientes del usuario que cierra sesión**. Los pendientes de otro usuario, si los hay porque su sesión venció antes de sincronizar (punto 12), se conservan hasta su próximo login, y nunca se le muestran a nadie más (punto 15). Si hay pendientes, antes de cerrar se avisa: "Tenés N gastos sin sincronizar. Si cerrás sesión se van a perder." y el usuario confirma o cancela.
 15. Los datos guardados y los pendientes de un usuario nunca se muestran a otro usuario que inicie sesión en el mismo dispositivo.
 
 ### Actualizaciones
