@@ -24,6 +24,10 @@ Reglas numeradas, verificables, sin ambigüedad.
 |---|---|---|---|
 | NNN-CA01 | | | |
 
+## 5.1 Contrato observable (para escribir los tests)
+<!-- Lo que un test puede observar desde afuera: códigos HTTP, claves de error, forma de las respuestas,
+     textos de la UI. No es el "cómo". Se completa antes de la fase roja para que el agente testing no invente. -->
+
 ## 6. Fuera de alcance
 
 ## 7. Referencias
