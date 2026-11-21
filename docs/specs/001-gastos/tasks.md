@@ -12,7 +12,7 @@
 | T3 | Integración de las validaciones | 001-CA02, CA03 | hecha (en rojo) | ver commit `test(001)` |
 | T4 | Integración de las reglas de categorías | 001-CA11 a CA14 | hecha (en rojo) | ver commit `test(001)` |
 | T5 | E2E del flujo escrito a mano con los textos de §5.1 | 001-CA15 | hecha (en rojo) | ver commit `test(001)` |
-| T6 | **Regrabar el E2E con codegen** cuando exista "Mis gastos", antes del verify. Graba el humano: el agente testing levanta la app, le pasa el comando y el guion, y pule el código grabado (locators, aserciones, IDs) | 001-CA15 | **pendiente** | |
+| T6 | **Regrabar el E2E con codegen** cuando exista "Mis gastos", antes del verify. Graba el humano: el agente testing levanta la app, le pasa el comando y el guion, y pule el código grabado (locators, aserciones, IDs) | 001-CA15 | hecha (2026-11-21): grabación del humano con codegen (`docs/e2e/grabacion-codegen-2026-11-21.txt`) pulida por testing; 18/18 E2E de negocio en verde contra el contenedor de prod | |
 | T7 | Integración del registro deshabilitado (criterio nuevo, R1 del verify 000) | 001-CA16 | hecha (en rojo) | ver commit `test(001): 001-CA16` |
 
 ### Contrato para el coder
@@ -128,7 +128,7 @@ Plan: `plan.md` (aprobado). Decisión estructural: **ADR-0008**.
 | C8 | ADR-0008 y su entrada en el índice | — | hecha | `docs(001): ADR-0008…` |
 | C9 | Integrar `main` (PR #4 de ci: pipeline nuevo, Tomcat y Jackson) | — | hecha | merge `origin/main` |
 | C10 | Push y PR #5 (de borrador a "ready for review") | — | hecha | |
-| T6 | **Regrabar el E2E con codegen**: ahora sí existe "Mis gastos". Graba el humano y pule el agente testing | 001-CA15 | **pendiente (testing)** | |
+| T6 | **Regrabar el E2E con codegen**: ahora sí existe "Mis gastos". Graba el humano y pule el agente testing | 001-CA15 | hecha (2026-11-21): grabación del humano con codegen (`docs/e2e/grabacion-codegen-2026-11-21.txt`) pulida por testing; 18/18 E2E de negocio en verde contra el contenedor de prod | |
 
 ### Tests generados que se ajustaron (no son del agente testing)
 - `GastoResourceIT`:

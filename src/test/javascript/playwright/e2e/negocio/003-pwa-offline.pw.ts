@@ -42,6 +42,17 @@ test.describe('003 PWA y carga sin conexión', () => {
     otros = [];
   });
 
+  // Limpieza de las categorías temporales de 003-CA06 ("E2E003 …"), también las que dejó una corrida que falló
+  // antes de borrarlas. Las que todavía tienen gastos se rechazan con 400 y quedan (no pasa: el usuario ya se borró).
+  test.afterAll(async () => {
+    const admin = await apiAdmin();
+    const categorias = (await (await admin.get('/api/categorias')).json()) as { id: number; nombre: string }[];
+    for (const c of categorias.filter(cat => cat.nombre.startsWith('E2E003'))) {
+      await admin.delete(`/api/categorias/${c.id}`);
+    }
+    await admin.dispose();
+  });
+
   test('003-CA01 instalable: manifest válido y service worker activo con scope /', async ({ page, jhi }) => {
     await page.goto('/');
 
@@ -156,7 +167,7 @@ test.describe('003 PWA y carga sin conexión', () => {
     context,
     jhi,
   }) => {
-    const admin = await apiAdmin(jhi);
+    const admin = await apiAdmin();
     const nombre = `E2E003 ${Date.now()}`.slice(0, 40);
     const categoria = (await (await admin.post('/api/categorias', { data: { nombre } })).json()) as { id: number };
     const u = await entrarConUsuarioNuevo(jhi);
@@ -188,7 +199,7 @@ test.describe('003 PWA y carga sin conexión', () => {
   });
 
   test('003-CA06 rechazo: un pendiente rechazado se puede descartar', async ({ page, context, jhi }) => {
-    const admin = await apiAdmin(jhi);
+    const admin = await apiAdmin();
     const nombre = `E2E003d ${Date.now()}`.slice(0, 40);
     const categoria = (await (await admin.post('/api/categorias', { data: { nombre } })).json()) as { id: number };
     const u = await entrarConUsuarioNuevo(jhi);

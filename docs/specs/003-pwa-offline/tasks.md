@@ -6,7 +6,7 @@
 |---|---|---|---|
 | T1 | E2E escritos a mano con el contrato §5.1 (PR #16) en `e2e/negocio/003-pwa-offline.pw.ts` | 003-CA01 a CA11 | escritos; compilan y pasan lint |
 | T2 | **Correrlos en rojo contra el jar de prod** y anotar la salida | 003-CA01 a CA11 | hecho por el agente pwa (ver abajo) |
-| T3 | Regrabar con codegen (graba el humano, pule el agente testing) | todos | pendiente |
+| T3 | Grabación con codegen (graba el humano, pule el agente testing) | CA04, CA05 (demo) | hecha (2026-11-21): `e2e/negocio/003-demo-offline.pw.ts`, una demo que **no reemplaza** a `003-pwa-offline.pw.ts`. Codegen no graba el corte de red de las DevTools: lo hace `context.setOffline` |
 
 ### Cómo correrlos (el service worker solo existe en el build de prod)
 ```
@@ -67,3 +67,9 @@ npx playwright test --project=chromium --retries=0   (jar e2e de prod, suite com
 ```
 
 Después de la revisión de seguridad automática del PR (caché de `/api/account` sin token): al abrir la app sin token se borra `api-v1` antes de pedir la sesión (`borrarCacheSiNoHaySesion`). Suite E2E completa otra vez: 73 passed, 1 skipped; la 003 sola, 3 corridas seguidas de 15 passed.
+
+### Revisión del agente testing (2026-11-21)
+- **Cambios del agente pwa en mis E2E (26eeecf, 9e91f2f): correctos, quedan.**
+  - CA01 sigue exigiendo el estado `activated`; espera a que el service worker salga de "activating" en vez de leerlo una sola vez.
+  - En CA09, durante la navegación del logout la consulta al navegador puede fallar y se reintenta como -1. La aserción sigue siendo `toBe(0)`, así que no se debilita.
+- **Limpieza:** el `afterAll` borra por API las categorías temporales "E2E003 …" de CA06, también las de corridas anteriores que fallaron. `apiAdmin()` ya no recibe `jhi`, porque los hooks `afterAll` no pueden usar fixtures de test.

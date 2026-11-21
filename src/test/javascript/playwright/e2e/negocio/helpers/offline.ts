@@ -1,5 +1,6 @@
 import { type APIRequestContext, type Page, expect, request as playwrightRequest } from '@playwright/test';
 
+import { credentials } from '../../../support/commands';
 import { type JHipster, test } from '../../../support/fixtures';
 import { hoyArgentina } from './usuarios';
 
@@ -90,8 +91,8 @@ export async function gastosEnServidor(jhi: JHipster, descripcion: string): Prom
  * Contexto de API del admin, separado del navegador: no le afecta `context.setOffline` (lo usa 003-CA06 para
  * borrar una categoría mientras el usuario está sin conexión).
  */
-export async function apiAdmin(jhi: JHipster): Promise<APIRequestContext> {
-  const { adminUsername, adminPassword } = jhi.credentials();
+export async function apiAdmin(): Promise<APIRequestContext> {
+  const { adminUsername, adminPassword } = credentials();
   const baseURL = test.info().project.use.baseURL;
   const anonimo = await playwrightRequest.newContext({ baseURL });
   const login = await anonimo.post('/api/authenticate', { data: { username: adminUsername, password: adminPassword } });
