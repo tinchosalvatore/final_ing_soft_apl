@@ -12,7 +12,7 @@
 | T3 | Unitarios del cálculo y del mes | 002-CA01 a CA07, CA09, CA10, CA11 | hecha (en rojo) | `e0eecec` |
 | T4 | Integración del service y del endpoint (Testcontainers) | 002-CA01, CA07, CA08, CA10, CA11 | hecha (en rojo) | `e0eecec` |
 | T5 | E2E del flujo escrito a mano con los textos de §5.1 | 002-CA12 | hecha (en rojo) | `e0eecec` |
-| T6 | **Regrabar el E2E con codegen** cuando exista la pantalla "Resumen", antes del verify. Graba el humano: el agente testing levanta la app, le pasa el comando y el guion, y pule el código grabado (locators, aserciones, IDs) | 002-CA12 | **pendiente** | |
+| T6 | **Regrabar el E2E con codegen** cuando exista la pantalla "Resumen", antes del verify. Graba el humano: el agente testing levanta la app, le pasa el comando y el guion, y pule el código grabado (locators, aserciones, IDs) | 002-CA12 | hecha (2026-11-21): grabación del humano con codegen (`docs/e2e/grabacion-codegen-2026-11-21.txt`) pulida por testing; 18/18 E2E de negocio en verde contra el contenedor de prod | |
 
 ### Contrato para el coder
 

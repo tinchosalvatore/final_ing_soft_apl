@@ -1,8 +1,13 @@
 import { expect, test } from '../../support/fixtures';
-import { type UsuarioPrueba, borrarUsuario, crearUsuarioActivo, hoyArgentina } from './helpers/usuarios';
+import { type UsuarioPrueba, borrarUsuario, crearUsuarioActivo } from './helpers/usuarios';
 
-// FASE ROJA: escrito a mano con los textos de la spec 002 §5.1, porque la pantalla "Resumen" todavía no existe.
-// PENDIENTE: regrabar con `npx playwright codegen http://localhost:8080` cuando exista la UI, antes del verify.
+// El humano grabó este test con `npx playwright codegen` el 2026-11-21. Es la parte B de
+// docs/e2e/grabacion-codegen-2026-11-21.txt. El agente testing lo pulió:
+// - el usuario nuevo se crea por API;
+// - el login usa el helper `jhi.login`;
+// - las categorías se eligen por label;
+// - cada resultado del criterio tiene su aserción;
+// - el usuario se borra al final.
 test.use({ trace: 'on' });
 
 test.describe('002 Resumen mensual', () => {
@@ -16,18 +21,18 @@ test.describe('002 Resumen mensual', () => {
   });
 
   test('002-CA12 flujo E2E: carga 2 gastos y ve el resumen con total y participación', async ({ jhi, page }) => {
+    // Usuario nuevo y sin gastos, para que los valores sean exactos (spec 002, CA12)
     usuario = await crearUsuarioActivo(jhi);
     await jhi.login(usuario.login, usuario.password);
     await page.goto('/');
+    await page.getByRole('link', { name: 'Mis gastos' }).click();
 
     for (const { monto, categoria } of [
       { monto: '1000', categoria: 'Supermercado' },
       { monto: '500', categoria: 'Transporte' },
     ]) {
-      await page.getByRole('link', { name: 'Mis gastos' }).click();
       await page.getByRole('button', { name: 'Nuevo gasto' }).click();
-      await page.getByLabel('Monto').fill(monto);
-      await page.getByLabel('Fecha').fill(hoyArgentina());
+      await page.getByRole('textbox', { name: 'Monto' }).fill(monto);
       await page.getByLabel('Categoría').selectOption({ label: categoria });
       await page.getByRole('button', { name: 'Guardar' }).click();
       await expect(page.getByRole('cell', { name: categoria })).toBeVisible();
@@ -37,12 +42,10 @@ test.describe('002 Resumen mensual', () => {
 
     // exact: la diferencia contra el mes anterior también muestra el monto, con signo (+$ 1.500,00)
     await expect(page.getByText('$ 1.500,00', { exact: true })).toBeVisible();
-    // usuario nuevo: el mes anterior está en 0, la diferencia se informa y la variación porcentual no (spec 002 §3.3)
+    // Usuario nuevo: el mes anterior está en 0, así que la diferencia se informa y la variación porcentual no (spec 002 §3.3)
     await expect(page.getByText('+$ 1.500,00', { exact: true })).toBeVisible();
     await expect(page.getByText('Sin datos del mes anterior')).toBeVisible();
-    const supermercado = page.getByRole('row').filter({ hasText: 'Supermercado' });
-    await expect(supermercado).toContainText('66,7 %');
-    const transporte = page.getByRole('row').filter({ hasText: 'Transporte' });
-    await expect(transporte).toContainText('33,3 %');
+    await expect(page.getByRole('row').filter({ hasText: 'Supermercado' })).toContainText('66,7 %');
+    await expect(page.getByRole('row').filter({ hasText: 'Transporte' })).toContainText('33,3 %');
   });
 });
